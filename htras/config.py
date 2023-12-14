@@ -13,6 +13,7 @@ REDIS_HOST = env("REDIS_HOST")
 REDIS_PORT = env("REDIS_PORT")
 REDIS_PASS = env("REDIS_PASS")
 
-LEDGER_MINERS = 'ledger:miners'
-LEDGER_MINERS_COUNT = 'ledger:miners:count'
-LEDGER_BLOCKS = 'ledger:blocks'
+DB_HOST = env("DB_HOST")
+DB_NAME = env("DB_NAME")
+DB_USER = env("DB_USER")
+DB_PASS = env("DB_PASS")

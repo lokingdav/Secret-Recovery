@@ -1,6 +1,12 @@
 async-timeout==4.0.3
 blspy==2.0.2
+certifi==2023.11.17
 click==8.1.7
+clickhouse-connect==0.6.22
+lz4==4.3.2
 python-dotenv==1.0.0
+pytz==2023.3.post1
 redis==5.0.1
 rq==1.15.1
+urllib3==2.1.0
+zstandard==0.22.0
