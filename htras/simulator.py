@@ -36,8 +36,10 @@ def register_clients(data):
             # Send block to server and receive signature
             sig = server.register_client(block)
             
-            # Verify signature
-            if not client.verify_registration(sigma.import_signature(sig), block.data):
+            if sig is None:
+                continue
+            
+            if not client.verify_registration(sig, block.data):
                 raise Exception("Registration failed")
             
             clients.append(client)
@@ -48,7 +50,6 @@ def run_client(client):
         
 def simulate(env):
     envdata = json.loads(open(env).read())
-    print(envdata)
     if 'register' not in envdata:
         raise Exception("No registration data found")
     register(envdata['register'])

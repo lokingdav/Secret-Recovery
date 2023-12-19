@@ -22,9 +22,10 @@ def create_table(name, columns, engine='MergeTree()'):
     ddl = f"CREATE TABLE IF NOT EXISTS {name} ({columns}) ENGINE = MergeTree()"
     connection.command(ddl)
     
-def drop_table(name):
+def drop_table(names):
     connection = open_db()
-    connection.command(f"DROP TABLE IF EXISTS {name}")
+    for name in names:
+        connection.command(f"DROP TABLE IF EXISTS {name}")
     
 def insert(table, records, cols):    
     connection = open_db()
@@ -34,7 +35,7 @@ def find_all(table, where, limit=None):
     connection = open_db()
     query = f"SELECT idx,cid,hash,data,prev,sig FROM {table} WHERE ({where}) ORDER BY idx DESC"
     query += f" LIMIT {limit}" if limit else ""
-    print(query)
+    # print(query)
     return connection.query(query).result_rows
 
 def find(table, where):

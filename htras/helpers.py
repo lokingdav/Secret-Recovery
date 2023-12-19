@@ -7,6 +7,9 @@ def hash256(data: str):
     data = data.encode() if type(data) == str else data
     return hashlib.sha256(data).hexdigest()
 
+def stringify(data):
+    return json.dumps(data)
+
 def setup(key):
     data = store.find(key)
     priv_k, pub_k, t_open, t_chal = None, None, None, None

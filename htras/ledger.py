@@ -1,11 +1,11 @@
 from . import store
 from . import sigma
 from . import database
+import json
 from .helpers import hash256
 from collections import namedtuple
 
 sk_L, vk_L, setup_k = None, None, 'ledger:setup'
-
 keys = store.find(setup_k)
 if keys:
     sk_L, vk_L = sigma.parse_keys(keys)
@@ -13,14 +13,16 @@ else:
     sk_L, vk_L = sigma.keygen()
     store.save(setup_k, sigma.export_keys(sk_L, vk_L))
 
-database.drop_table('ledger')
-database.create_table('ledger', [
-    'idx UInt32 NOT NULL', 'cid UInt32 NOT NULL', 
-    'hash String', 'data String', 'prev String', 'sig String',
-    'PRIMARY KEY idx'
-])
-
 class Block(namedtuple('Block', ['idx', 'cid', 'hash', 'data', 'prev', 'sig'])):
+    TYPE_SERVER_REG = 'server_reg'
+    TYPE_CLIENT_REG = 'client_reg'
+    TYPE_AUTHORIZE_REG = 'authorize_reg'
+    TYPE_RESPONSE = 'response'
+    TYPE_REQUEST = 'request'
+    
+    def parse_data(self):
+        return json.loads(self.data)
+    
     def datakey(self):
         return hash256(self.data)
     
@@ -35,7 +37,7 @@ class transaction():
     def __str__(self):
         return f"{self.hash}{self.data}{self.prev}"
 
-def post(data: str, cid: str) -> Block:
+def post(data: dict, cid: str) -> Block:
     latest_trnx = database.find('ledger', f"cid={cid}")
     
     if latest_trnx:
@@ -57,7 +59,7 @@ def save_block(idx: int, cid:str, trnx: transaction, sig: sigma.G2Element):
     database.insert('ledger', [block], ['idx', 'cid', 'hash', 'data', 'prev', 'sig'])
     return Block(*block)
 
-def create_trnx(data: str, prev: str) -> transaction:
+def create_trnx(data: dict, prev: str) -> transaction:
     trnx = transaction(data=data)
     trnx.prev = prev
     trnx.set_hash()
