@@ -31,6 +31,9 @@ def import_signature(signature: str) -> G2Element:
     return G2Element.from_bytes(bytes.fromhex(signature))
 
 def import_priv_key(privkey: str) -> PrivateKey:
+    if isinstance(privkey, PrivateKey):
+        return privkey
+    
     return PrivateKey.from_bytes(bytes.fromhex(privkey))
 
 def import_pub_key(pubkey: str) -> G1Element:

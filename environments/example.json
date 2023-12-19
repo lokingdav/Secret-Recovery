@@ -1,0 +1,8 @@
+{
+    "register": {
+        "servers": 1,
+        "clients": {
+            "0": "0:3"
+        }
+    }
+}

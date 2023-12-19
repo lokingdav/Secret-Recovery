@@ -4,7 +4,8 @@ from . import sigma
 from . import store
 
 def hash256(data: str):
-    return hashlib.sha256(data.encode()).hexdigest()
+    data = data.encode() if type(data) == str else data
+    return hashlib.sha256(data).hexdigest()
 
 def setup(key):
     data = store.find(key)
@@ -17,7 +18,7 @@ def setup(key):
     else:
         t_open, t_chal = 5, 5
         priv_k, pub_k = sigma.keygen()
-        data = {'t': f'{t_open}:{t_chal}', 'keys': f'{priv_k}:{pub_k}'}
+        data = {'t': f'{t_open}:{t_chal}', 'keys': f'{sigma.stringify(priv_k)}:{sigma.stringify(pub_k)}'}
         store.save(key, json.dumps(data))
         
     return (priv_k, pub_k, t_open, t_chal)

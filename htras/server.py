@@ -8,7 +8,8 @@ class server:
         
     def register(self, cid: str):
         self.cid = cid
-        self.sk, self.vk, t_o, t_c = helpers.setup(SERVERS + f":{id}")
+        key = SERVERS + ":" + str(self.id)
+        self.sk, self.vk, t_o, t_c = helpers.setup(key)
         pubk_str = sigma.stringify(self.vk)
         self.regb = ledger.post(data=f'register:{pubk_str}', cid=cid)
         

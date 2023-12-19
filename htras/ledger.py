@@ -1,7 +1,7 @@
 from . import store
 from . import sigma
 from . import database
-from helpers import hash256
+from .helpers import hash256
 from collections import namedtuple
 
 sk_L, vk_L, setup_k = None, None, 'ledger:setup'
@@ -13,9 +13,10 @@ else:
     sk_L, vk_L = sigma.keygen()
     store.save(setup_k, sigma.export_keys(sk_L, vk_L))
 
+database.drop_table('ledger')
 database.create_table('ledger', [
     'idx UInt32 NOT NULL', 'cid UInt32 NOT NULL', 
-    'hash STRING', 'data STRING', 'prev STRING', 'sig STRING',
+    'hash String', 'data String', 'prev String', 'sig String',
     'PRIMARY KEY idx'
 ])
 
@@ -35,23 +36,30 @@ class transaction():
         return f"{self.hash}{self.data}{self.prev}"
 
 def post(data: str, cid: str) -> Block:
-    latest_trnx = database.find('ledger', f"cid={cid} ORDER BY idx DESC LIMIT 1")
-    trnx = create_trnx(data, cid, latest_trnx)
+    latest_trnx = database.find('ledger', f"cid={cid}")
+    
+    if latest_trnx:
+        latest_trnx = Block(*latest_trnx)
+        idx = latest_trnx.idx + 1
+        prev = latest_trnx.hash
+    else:
+        idx, prev = 1, f'root|{cid}'
+    
+    trnx = create_trnx(data=data, prev=prev)
     sig = sign_trnx(trnx)
-    idx = latest_trnx.idx + 1 if latest_trnx else 1
     return save_block(idx=idx, cid=cid, trnx=trnx, sig=sig)
 
 def find_block(cid: str, bid: str) -> Block:
-    return database.find('ledger', f"cid={cid} AND hash='{bid}'")
+    return database.find('ledger', f"cid={cid} AND idx='{bid}'")
 
 def save_block(idx: int, cid:str, trnx: transaction, sig: sigma.G2Element):
     block = [idx, cid, trnx.hash, trnx.data, trnx.prev, sigma.stringify(sig)]
-    database.insert('ledger', [block], list(block._fields))
+    database.insert('ledger', [block], ['idx', 'cid', 'hash', 'data', 'prev', 'sig'])
     return Block(*block)
 
-def create_trnx(data: str, cid: str, latest_trnx: Block) -> transaction:
+def create_trnx(data: str, prev: str) -> transaction:
     trnx = transaction(data=data)
-    trnx.prev = latest_trnx.hash if latest_trnx else f'root|{cid}'
+    trnx.prev = prev
     trnx.set_hash()
     return trnx
 
