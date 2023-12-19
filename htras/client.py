@@ -6,11 +6,11 @@ CLIENTS = "clients"
 
 class client:
     def __init__(self, id) -> None:
-        self.id = CLIENTS + f":{id}"
+        self.id = f"c{id}"
         
     def register(self, cid, bid):
         self.vk_s = self.get_server_vk(cid, bid)
-        confs = helpers.setup(self.id)
+        confs = helpers.setup(CLIENTS + ':' + self.id)
         self.sk_c, self.vk_c, self.t_open, self.t_chal = confs
         perm_info = helpers.stringify({
             'id': self.id, 

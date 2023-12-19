@@ -14,9 +14,9 @@ else:
     store.save(setup_k, sigma.export_keys(sk_L, vk_L))
 
 class Block(namedtuple('Block', ['idx', 'cid', 'hash', 'data', 'prev', 'sig'])):
-    TYPE_SERVER_REG = 'server_reg'
-    TYPE_CLIENT_REG = 'client_reg'
-    TYPE_AUTHORIZE_REG = 'authorize_reg'
+    TYPE_SERVER_REG = 'server-reg'
+    TYPE_CLIENT_REG = 'perm-info'
+    TYPE_AUTHORIZE_REG = 'authorize-reg'
     TYPE_RESPONSE = 'response'
     TYPE_REQUEST = 'request'
     

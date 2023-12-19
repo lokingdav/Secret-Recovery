@@ -46,3 +46,6 @@ def find(table, where):
     else:
         return rows[0]
     
+def query(query, params=None):
+    connection = open_db()
+    return connection.query(query, parameters=params).result_rows

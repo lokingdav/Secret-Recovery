@@ -9,6 +9,9 @@ def migrate():
         'hash String', 'data String', 'prev String', 'sig String',
         'PRIMARY KEY idx'
     ])
+    database.create_table('customers', [
+        'id String', 'data String', 'PRIMARY KEY id'
+    ])
 
 def init(args):
     if args.refresh:

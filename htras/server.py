@@ -5,11 +5,11 @@ SERVERS = 'servers'
 
 class server:
     def __init__(self, id) -> None:
-        self.id = id
+        self.id = f"s{id}"
         
     def register(self, cid: str):
         self.cid = cid
-        key = SERVERS + ":" + str(self.id)
+        key = SERVERS + ":" + self.id
         self.sk, self.vk, t_o, t_c = helpers.setup(key)
         pubk_str = sigma.stringify(self.vk)
         data = json.dumps({
@@ -20,13 +20,13 @@ class server:
         self.regb = ledger.post(data=data, cid=cid)
         
     def register_client(self, block: ledger.Block):
-        key = 'L_s:' + str(self.id) + ':' + block.datakey()
-        client = store.find(key=key)
-        
+        id = block.datakey()
+        client = database.query('SELECT * FROM customers WHERE id=%s', [id])
+        # print(client)
         if client:
             return None
         
-        store.save(key=key, value=block.data)
+        database.insert('customers', [[id, block.data]], ['id', 'data'])
         
         sig = sigma.sign(self.sk, block.data)
         data = block.parse_data()
