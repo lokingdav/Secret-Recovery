@@ -33,3 +33,15 @@ class client:
     
     def verify_registration(self, signature: sigma.G2Element, data: str):
         return sigma.verify(self.vk_s, data, signature)
+    
+    def accept_tx(self, block: ledger.Block, res: str = 'accepted'):
+        tx_data = block.parse_data()
+        tx_data['type'] = ledger.Block.TYPE_RESPONSE
+        tx_data['action'] = res
+        sig = sigma.sign(self.sk_c, helpers.stringify(tx_data))
+        tx_data[f'{res}_sig'] = sigma.stringify(sig)
+        tx_data = helpers.stringify(tx_data)
+        return ledger.post(data=tx_data, cid=block.cid)
+    
+    def deny_tx(self, block: ledger.Block):
+        self.accept_tx(block, 'denied')
