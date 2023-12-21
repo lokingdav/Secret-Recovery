@@ -2,17 +2,38 @@ from . import store
 from . import sigma
 from . import database
 import json
-from .helpers import hash256
+from .helpers import hash256, stringify
 from collections import namedtuple
 
 sk_L, vk_L, setup_k = None, None, 'ledger:setup'
-keys = store.find(setup_k)
-if keys:
-    sk_L, vk_L = sigma.parse_keys(keys)
-else:
-    sk_L, vk_L = sigma.keygen()
-    store.save(setup_k, sigma.export_keys(sk_L, vk_L))
 
+def setup():
+    global sk_L, vk_L
+    
+    keys = store.find(setup_k)
+    if keys:
+        sk_L, vk_L = sigma.parse_keys(keys)
+    else:
+        sk_L, vk_L = sigma.keygen()
+        store.save(setup_k, sigma.export_keys(sk_L, vk_L))
+    
+    create_initial_block()
+    
+def get_cid(dtype=None):
+    if dtype is str:
+        return [sigma.stringify(vk_L)]
+    return [vk_L]
+
+def create_initial_block():
+    cid = get_cid(str)
+    data = stringify({
+        'type': 'genesis',
+        'vk_Ls': cid,
+    })
+    genesis = create_trnx(data=data, prev="root")
+    sig = sign_trnx(genesis)
+    save_block(idx=0, cid=cid, trnx=genesis, sig=sig)
+    
 class Block(namedtuple('Block', ['idx', 'cid', 'hash', 'data', 'prev', 'sig'])):
     TYPE_SERVER_REG = 'server-reg'
     TYPE_CLIENT_REG = 'perm-info'
@@ -38,21 +59,19 @@ class transaction():
         return f"{self.hash}{self.data}{self.prev}"
 
 def post(data: dict, cid: str) -> Block:
-    latest_trnx = database.find('ledger', f"cid={cid}")
+    l_trnx = database.find('ledger', f"cid={cid}")
+    l_trnx = Block(*l_trnx)
+    idx = l_trnx.idx + 1
     
-    if latest_trnx:
-        latest_trnx = Block(*latest_trnx)
-        idx = latest_trnx.idx + 1
-        prev = latest_trnx.hash
-    else:
-        idx, prev = 1, f'root|{cid}'
-    
-    trnx = create_trnx(data=data, prev=prev)
+    trnx = create_trnx(data=data, prev=l_trnx.hash)
     sig = sign_trnx(trnx)
-    return save_block(idx=idx, cid=cid, trnx=trnx, sig=sig)
+    return save_block(idx=l_trnx.idx + 1, cid=cid, trnx=trnx, sig=sig)
 
 def find_block(cid: str, bid: str) -> Block:
-    return database.find('ledger', f"cid={cid} AND idx='{bid}'")
+    _block = database.find('ledger', f"cid={cid} AND idx='{bid}'")
+    if not _block:
+        return None
+    return Block(*_block)
 
 def save_block(idx: int, cid:str, trnx: transaction, sig: sigma.G2Element):
     block = [idx, cid, trnx.hash, trnx.data, trnx.prev, sigma.stringify(sig)]
@@ -71,3 +90,5 @@ def sign_trnx(trnx: transaction):
 
 def verify_trnx(trnx: transaction, sig: sigma.G2Element):
     return sigma.verify(vk_L, str(trnx), sig)
+
+setup()

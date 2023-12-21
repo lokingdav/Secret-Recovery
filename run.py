@@ -3,13 +3,13 @@ import argparse
     
 def migrate():
     print('Migrating database...')
-    database.drop_table(['ledger', 'customers'])
+    database.drop_table(['ledger', 'clients'])
     database.create_table('ledger', [
         'idx UInt32 NOT NULL', 'cid UInt32 NOT NULL', 
         'hash String', 'data String', 'prev String', 'sig String',
         'PRIMARY KEY idx'
     ])
-    database.create_table('customers', [
+    database.create_table('clients', [
         'id String', 'data String', 'PRIMARY KEY id'
     ])
 

@@ -26,7 +26,6 @@ class client:
         reg_block: ledger.Block = ledger.find_block(cid=cid, bid=bid)
         if not reg_block:
             raise Exception("Server not found")
-        reg_block = ledger.Block(*reg_block)
         reg_data = reg_block.parse_data()
         vk_s = reg_data.get('vk_s')
         return vk_s

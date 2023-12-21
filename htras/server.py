@@ -10,7 +10,7 @@ class server:
     def register(self, cid: str):
         self.cid = cid
         key = SERVERS + ":" + self.id
-        self.sk, self.vk, t_o, t_c = helpers.setup(key)
+        self.sk, self.vk, _1, _2 = helpers.setup(key)
         pubk_str = sigma.stringify(self.vk)
         data = json.dumps({
             'type': ledger.Block.TYPE_SERVER_REG,
@@ -21,12 +21,12 @@ class server:
         
     def register_client(self, block: ledger.Block):
         id = block.datakey()
-        client = database.query('SELECT * FROM customers WHERE id=%s', [id])
+        client = database.query('SELECT * FROM clients WHERE id=%s', [id])
         # print(client)
         if client:
             return None
         
-        database.insert('customers', [[id, block.data]], ['id', 'data'])
+        database.insert('clients', [[id, block.data]], ['id', 'data'])
         
         sig = sigma.sign(self.sk, block.data)
         data = block.parse_data()

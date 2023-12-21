@@ -15,10 +15,11 @@ def register(data):
 
 def register_servers(num_servers):
     global servers
+    cid = ledger.get_cid(str)
     for i in range(num_servers):
         print(f"Registering server {i}")
         serv = Server(id=i)
-        serv.register(cid=i)
+        serv.register(cid=cid)
         servers.append(serv)
         
 def register_clients(data):
