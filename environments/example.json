@@ -4,5 +4,15 @@
         "clients": {
             "0": "0:3"
         }
-    }
+    },
+    "sims": [
+        { 
+            "type": "gen_perms",
+            "args": {
+                "server": 0,
+                "client": 0,
+                "req": "temp"
+            }
+        }
+    ]
 }

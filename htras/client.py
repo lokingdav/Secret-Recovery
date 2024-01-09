@@ -12,15 +12,15 @@ class client:
         self.vk_s = self.get_server_vk(cid, bid)
         confs = helpers.setup(CLIENTS + ':' + self.id)
         self.sk_c, self.vk_c, self.t_open, self.t_chal = confs
-        perm_info = helpers.stringify({
+        self.perm_info = {
             'id': self.id, 
             'type': ledger.Block.TYPE_CLIENT_REG,
             'vk_c': sigma.stringify(self.vk_c), 
             't_open': self.t_open, 
             't_chal': self.t_chal, 
             'vk_s': self.vk_s
-        })
-        return ledger.post(data=perm_info, cid=cid)
+        } 
+        return ledger.post(data=helpers.stringify(self.perm_info), cid=cid)
         
     def get_server_vk(self, cid, bid):
         reg_block: ledger.Block = ledger.find_block(cid=cid, bid=bid)

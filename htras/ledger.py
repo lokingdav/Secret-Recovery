@@ -65,7 +65,7 @@ def post(data: dict, cid: str) -> Block:
     
     trnx = create_trnx(data=data, prev=l_trnx.hash)
     sig = sign_trnx(trnx)
-    return save_block(idx=l_trnx.idx + 1, cid=cid, trnx=trnx, sig=sig)
+    return save_block(idx=idx, cid=cid, trnx=trnx, sig=sig)
 
 def find_block(cid: str, bid: str) -> Block:
     _block = database.find('ledger', f"cid={cid} AND idx='{bid}'")
