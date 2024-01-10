@@ -1,5 +1,5 @@
 import json
-from . import ledger, sigma
+from . import ledger, sigma, commitment, helpers
 from .server import server as Server
 from .client import client as Client
 from multiprocessing import Pool
@@ -47,7 +47,33 @@ def register_clients(data):
             clients.append(client)
              
 def generate_permission(data):
-    print(data)
+    party_type, party_idx = data['party'].split(':')
+    party_idx = int(party_idx)
+    party = clients[party_idx] if party_type == 'client' else servers[party_idx]
+    server = servers[data['server-idx']]
+    client_perm_info = clients[data['perm-info-client-idx']].perm_info
+    req = data['req']
+    
+    # commit and post commit to ledger
+    message = helpers.stringify({
+        'perm_info': client_perm_info,
+        'server': server.id,
+        'req': req,
+    })
+    com, secret = commitment.commit(message)
+    block_data = helpers.stringify({
+        'type': ledger.Block.TYPE_REQUEST,
+        'com': commitment.export_com(com),
+    })
+    block: ledger.Block = ledger.post(data=block_data, cid=server.cid)
+    
+    # open commitment and post opening to ledger
+    block_data = helpers.stringify({
+        'type': ledger.Block.TYPE_RESPONSE,
+        'open': commitment.export_secret(secret),
+    })
+    ledger.post(data=block_data, cid=block.cid)
+    
      
 def run_sim_seq(data):
     for cmd in data:

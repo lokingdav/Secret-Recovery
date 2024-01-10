@@ -5,10 +5,15 @@ from . import sigma
 CLIENTS = "clients"
 
 class client:
+    id: str
+    cid: str
+    perm_info: dict
+    
     def __init__(self, id) -> None:
         self.id = f"c{id}"
         
     def register(self, cid, bid):
+        self.cid = cid
         self.vk_s = self.get_server_vk(cid, bid)
         confs = helpers.setup(CLIENTS + ':' + self.id)
         self.sk_c, self.vk_c, self.t_open, self.t_chal = confs

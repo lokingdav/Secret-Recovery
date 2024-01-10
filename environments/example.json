@@ -8,11 +8,10 @@
     "sim-seq": [
         { 
             "type": "gen_perms",
-            "args": {
-                "server-idx": 0,
-                "perm-info-client-idx": 0,
-                "req": "temp"
-            }
+            "party": "client:0", 
+            "server-idx": 0,
+            "perm-info-client-idx": 0,
+            "req": "temp"
         }
     ]
 }

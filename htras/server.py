@@ -4,6 +4,9 @@ from . import helpers, ledger, sigma, store, database
 SERVERS = 'servers'
 
 class server:
+    id: str
+    cid: str
+    
     def __init__(self, id) -> None:
         self.id = f"s{id}"
         

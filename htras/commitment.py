@@ -1,39 +1,41 @@
-from petlib.bn import Bn
-from petlib.ec import EcGroup, EcPt
+from oblivious.ristretto import point as Point, scalar as Scalar
 
-G = EcGroup()
-
-def commit(message, secret = None):
-    secret = Bn().random() if secret is None else import_secret(secret)
-    msg_point: EcPt = G.hash_to_point(message)
-    com: EcPt = msg_point.pt_mul(secret)
-
+def commit(message, secret = None) -> (Point, Scalar):
+    secret = Scalar() if secret is None else import_secret(secret)
+    message = to_bytes(message)
+    msg_point: Point = Point.hash(message)
+    com: Point = secret * msg_point
     return com, secret
 
-def open_commitment(com, message, secret):
-    com, secret = import_com(com), import_secret(secret)
-    msg_point: EcPt = G.hash_to_point(message)
-    com_prime: EcPt = msg_point.pt_mul(secret)
-
+def open_com(com, msg, sec) -> bool:
+    com, msg, sec = import_com(com), to_bytes(msg), import_secret(sec)
+    msg_point: Point = Point.hash(msg)
+    com_prime: Point = sec * msg_point
     return com == com_prime
 
-def export_com(com: EcPt):
-    if not isinstance(com, EcPt):
+def export_com(com: Point):
+    if not isinstance(com, Point):
         raise Exception("Not a commitment")
     
-    return com.export()
+    return com.hex()
 
 def import_com(com):
-    if isinstance(com, EcPt):
+    if isinstance(com, Point):
         return com
     
-    return EcPt.from_binary(com)
+    return Point.fromhex(com)
 
-def export_secret(secret: Bn):
-    return secret.binary()
+def export_secret(secret: Scalar):
+    return secret.hex()
 
 def import_secret(secret):
-    if isinstance(secret, Bn):
+    if isinstance(secret, Scalar):
         return secret
     
-    return Bn.from_binary(secret)
+    return Scalar.fromhex(secret)
+
+def to_bytes(message):
+    if isinstance(message, str):
+        return message.encode()
+    
+    return message

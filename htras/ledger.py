@@ -36,7 +36,7 @@ def create_initial_block():
     
 class Block(namedtuple('Block', ['idx', 'cid', 'hash', 'data', 'prev', 'sig'])):
     TYPE_SERVER_REG = 'server-reg'
-    TYPE_CLIENT_REG = 'perm-info'
+    TYPE_CLIENT_REG = 'client-reg'
     TYPE_AUTHORIZE_REG = 'authorize-reg'
     TYPE_RESPONSE = 'response'
     TYPE_REQUEST = 'request'
