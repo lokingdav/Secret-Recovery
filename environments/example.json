@@ -1,16 +1,16 @@
 {
     "register": {
-        "servers": 1,
+        "num-servers": 1,
         "clients": {
-            "0": "0:3"
+            "0": "0:1"
         }
     },
-    "sims": [
+    "sim-seq": [
         { 
             "type": "gen_perms",
             "args": {
-                "server": 0,
-                "client": 0,
+                "server-idx": 0,
+                "perm-info-client-idx": 0,
                 "req": "temp"
             }
         }

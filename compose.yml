@@ -1,0 +1,46 @@
+services:
+  redis:
+    container_name: redis
+    image: redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+
+  db:
+    container_name: db
+    image: clickhouse/clickhouse-server
+    ports:
+      - '8123:8123'
+      - '9000:9000'
+      - '9009:9009'
+    volumes:
+      - htras_db_data:/var/lib/clickhouse
+      - htras_db_log:/var/log/clickhouse-server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8123"]
+      interval: 1s
+      timeout: 5s
+      retries: 100
+
+  htras:
+    container_name: htras
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - '.:/app'
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+networks:
+  default:
+    name: htras_network
+
+volumes:
+  htras_db_data:
+  htras_db_log:

@@ -10,7 +10,7 @@ num_processes = 10
 servers, clients = [], []
 
 def register(data):
-    register_servers(int(data['servers']))
+    register_servers(int(data['num-servers']))
     register_clients(data['clients'])
 
 def register_servers(num_servers):
@@ -45,15 +45,24 @@ def register_clients(data):
             
             clients.append(client)
              
-def run_client(client):
-    while True:
-        time.sleep(random.randint(1, 10))
-        
+def generate_permission(data):
+    print(data)
+     
+def run_sim_seq(data):
+    for cmd in data:
+        if cmd['type'] == 'gen_perms':
+            generate_permission(cmd)
+        else:
+            raise Exception("Invalid simulation sequence type")
+    
 def simulate(env):
     envdata = json.loads(open(env).read())
     if 'register' not in envdata:
         raise Exception("No registration data found")
     register(envdata['register'])
+    if 'sim-seq' not in envdata:
+        raise Exception("No simulation sequence found")
+    run_sim_seq(envdata['sim-seq'])
 
 def get_range(args):
     start, end = 0, 0

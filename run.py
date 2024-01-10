@@ -1,4 +1,4 @@
-from htras import simulator, database
+from htras import simulator, database, config
 import argparse
     
 def migrate():
@@ -16,12 +16,15 @@ def migrate():
 def init(args):
     if args.refresh:
         migrate()
-        
-    simulator.simulate(args.env)
+    env = args.env or config.ENV_FILE
+    env = env or input("Enter path to env file: ")
+    
+    print(f"Running simulation with {env}")
+    simulator.simulate(env)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-e', '--env', type=str, help='/path/to/env', required=True)
+    parser.add_argument('-e', '--env', type=str, help='/path/to/env', required=False)
     parser.add_argument('-r', '--refresh', action='store_true', help='Refresh database migration')
     args = parser.parse_args()
     
