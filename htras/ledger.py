@@ -59,7 +59,8 @@ class transaction():
         return f"{self.hash}{self.data}{self.prev}"
 
 def post(data: dict, cid: str) -> Block:
-    l_trnx = database.find('ledger', f"cid={cid}")
+    cid = stringify(cid)
+    l_trnx = database.find('ledger', f"cid='{cid}'")
     l_trnx = Block(*l_trnx)
     idx = l_trnx.idx + 1
     
@@ -68,13 +69,14 @@ def post(data: dict, cid: str) -> Block:
     return save_block(idx=idx, cid=cid, trnx=trnx, sig=sig)
 
 def find_block(cid: str, bid: str) -> Block:
-    _block = database.find('ledger', f"cid={cid} AND idx='{bid}'")
+    cid = stringify(cid)
+    _block = database.find('ledger', f"cid='{cid}' AND idx='{bid}'")
     if not _block:
         return None
     return Block(*_block)
 
 def save_block(idx: int, cid:str, trnx: transaction, sig: sigma.G2Element):
-    block = [idx, cid, trnx.hash, trnx.data, trnx.prev, sigma.stringify(sig)]
+    block = [idx, stringify(cid), trnx.hash, trnx.data, trnx.prev, sigma.stringify(sig)]
     database.insert('ledger', [block], ['idx', 'cid', 'hash', 'data', 'prev', 'sig'])
     return Block(*block)
 
@@ -90,5 +92,3 @@ def sign_trnx(trnx: transaction):
 
 def verify_trnx(trnx: transaction, sig: sigma.G2Element):
     return sigma.verify(vk_L, str(trnx), sig)
-
-setup()

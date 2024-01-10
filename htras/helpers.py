@@ -8,6 +8,8 @@ def hash256(data: str):
     return hashlib.sha256(data).hexdigest()
 
 def stringify(data):
+    if type(data) == str:
+        return data
     return json.dumps(data)
 
 def setup(key):

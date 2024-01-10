@@ -5,7 +5,7 @@ def migrate():
     print('Migrating database...')
     database.drop_table(['ledger', 'clients'])
     database.create_table('ledger', [
-        'idx UInt32 NOT NULL', 'cid UInt32 NOT NULL', 
+        'idx UInt32 NOT NULL', 'cid String NOT NULL', 
         'hash String', 'data String', 'prev String', 'sig String',
         'PRIMARY KEY idx'
     ])
@@ -16,6 +16,7 @@ def migrate():
 def init(args):
     if args.refresh:
         migrate()
+    simulator.init()
     env = args.env or config.ENV_FILE
     env = env or input("Enter path to env file: ")
     

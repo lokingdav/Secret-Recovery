@@ -1,5 +1,3 @@
-import time
-import random
 import json
 from . import ledger, sigma
 from .server import server as Server
@@ -8,6 +6,9 @@ from multiprocessing import Pool
 
 num_processes = 10
 servers, clients = [], []
+
+def init():
+    ledger.setup()
 
 def register(data):
     register_servers(int(data['num-servers']))

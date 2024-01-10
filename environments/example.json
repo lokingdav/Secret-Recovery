@@ -2,7 +2,7 @@
     "register": {
         "num-servers": 1,
         "clients": {
-            "0": "0:1"
+            "0": "0:3"
         }
     },
     "sim-seq": [
