@@ -64,21 +64,42 @@ def generate_permission(data):
     block_data = helpers.stringify({
         'type': ledger.Block.TYPE_REQUEST,
         'com': commitment.export_com(com),
+        'cmd-id': str(data['cmd-id']),
     })
     block: ledger.Block = ledger.post(data=block_data, cid=server.cid)
     
     # open commitment and post opening to ledger
     block_data = helpers.stringify({
-        'type': ledger.Block.TYPE_RESPONSE,
+        'type': ledger.Block.TYPE_REQUEST,
         'open': commitment.export_secret(secret),
+        'cmd-id': str(data['cmd-id']),
     })
     ledger.post(data=block_data, cid=block.cid)
+
+def client_accept_deny_permission(client_idx, data):
+    pass
+
+def server_accept_deny_permission(server_idx, data):
+    pass
+
+def on_seeing_tx_com_open(data):
+    party_type, party_idx = data['party'].split(':')
+    action, cmd_id = data['action'].split(':')
+    data['action'], data['action-cmd-id'] = cmd_id
     
-     
+    if party_type == 'client':
+        client_accept_deny_permission(int(party_idx), data)
+    elif party_type == 'server':
+        server_accept_deny_permission(int(party_idx), data)
+    else:
+        raise Exception(f"Invalid party type: {data}")
+    
 def run_sim_seq(data):
     for cmd in data:
         if cmd['type'] == 'gen_perms':
             generate_permission(cmd)
+        elif cmd['type'] == 'see_tx_com_open':
+            on_seeing_tx_com_open(cmd)
         else:
             raise Exception("Invalid simulation sequence type")
     
@@ -87,6 +108,7 @@ def simulate(env):
     if 'register' not in envdata:
         raise Exception("No registration data found")
     register(envdata['register'])
+    
     if 'sim-seq' not in envdata:
         raise Exception("No simulation sequence found")
     run_sim_seq(envdata['sim-seq'])
