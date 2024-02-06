@@ -28,3 +28,7 @@ def import_point(point):
         return point
     
     return Point.fromhex(point)
+
+def random_DH():
+    scalar: Scalar = random_scalar()
+    return scalar, point_from_scalar(scalar)

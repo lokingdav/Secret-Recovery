@@ -1,4 +1,4 @@
-from . import sigma, ec_group
+from . import aes, sigma, ec_group, aes
 
 msk, mvk = None, None
 retKs = {}
@@ -8,24 +8,32 @@ def install():
     if msk is None or mvk is None:
         msk, mvk = sigma.keygen()
     
+def getpk():
+    return mvk
     
-def store(dh_A:str, vk_client: str):
-    dh_A: ec_group.Point = ec_group.import_point(dh_A)
+def store(A, vk_client: str):
+    global retKs
+    vk_client = sigma.stringify(vk_client)
+    b, B = ec_group.random_DH()
+    retKs[vk_client] = b * A
     
-    dh_b: ec_group.Scalar = ec_group.random_scalar()
-    dh_B = ec_group.Point = ec_group.point_from_scalar(dh_b)
+    sig = sigma.sign(msk, f"{vk_client}|{A.hex()}|{B.hex()}")
     
-    retKs[vk_client] = dh_A * dh_b
-    dh_B = ec_group.export_point(dh_B)
-    
-    return (dh_B, vk_client)
+    return B, vk_client, sig
     
 
-def verify_ciphertext():
-    pass
+def verify_ciphertext(vk_client, perm_info, data):
+    nonce, ctx, mac = data
+    vk_client = sigma.stringify(vk_client)
+    msg = aes.dec(retKs[vk_client], nonce=nonce, ctx=ctx, mac=mac)
+    perm_info_prime, secret = msg.split(b'|')
+    return perm_info_prime == perm_info
 
 def remove():
     pass
 
 def recover():
     pass
+
+def sign(msg):
+    return sigma.sign(msk, msg)

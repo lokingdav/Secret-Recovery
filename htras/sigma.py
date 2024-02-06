@@ -17,6 +17,9 @@ def verify(pubkey: G1Element, message, signature: G2Element) -> bool:
     return sigma.verify(pubkey, message, signature)
 
 def stringify(key): 
+    if type(key) == str:
+        return key
+    
     return bytes(key).hex()
 
 def msg_to_bytes(msg):
