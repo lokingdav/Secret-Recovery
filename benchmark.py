@@ -2,7 +2,7 @@ from htras import enc_dec_scheme, sigma, ec_group, helpers, enclave, chain
 
 enclave.install()
 
-num_runs = 1
+num_runs = 100
 secret = helpers.random_bytes(32) # Client's secret
 perm_info = helpers.random_bytes(32) # Client perm information
 
@@ -117,7 +117,6 @@ def bench_recover():
         client_p1_start = helpers.startStopwatch()
         pubk, privk = enc_dec_scheme.rsa_keygen()
         req = b"recover" + b'|' + pubk.export_key()
-        
         client_p1_time = helpers.stopStopwatch(client_p1_start)
         
         permission = {

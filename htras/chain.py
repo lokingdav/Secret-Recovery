@@ -6,7 +6,7 @@ import os, pickle
 
 miners_file = 'miners.pkl'
 miners = {}
-num_miners = 2
+num_miners = 100
 trnx = None
 
 def init():
