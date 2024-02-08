@@ -1,4 +1,4 @@
-from htras import enc_dec_scheme, sigma, ec_group, helpers, enclave
+from htras import enc_dec_scheme, sigma, ec_group, helpers, enclave, chain
 
 enclave.install()
 
@@ -102,21 +102,60 @@ def bench_recover():
     # setup for recover
     original_secret = perm_info + b'|' + secret
     csk, cvk = sigma.keygen()
+    ssk, svk = sigma.keygen()
+    lsk, lvk = sigma.keygen()
+    ssig = sigma.sign(ssk, b"recover")
+    lsig = sigma.sign(lsk, b"recover")
     cretK = ec_group.point_from_scalar(ec_group.random_scalar())
     aes_ctx = enc_dec_scheme.aes_enc(cretK, original_secret)
     enclave.set_client_retK(cvk, cretK)
-    
+    chain.init()
     
     for i in range(num_runs):
+        
         # client part 1
         client_p1_start = helpers.startStopwatch()
         pubk, privk = enc_dec_scheme.rsa_keygen()
         req = b"recover" + b'|' + pubk.export_key()
+        
         client_p1_time = helpers.stopStopwatch(client_p1_start)
         
         # cloud part 1
         cloud_p1_start = helpers.startStopwatch()
-        rsa_ctx, sig_att = enclave.recover(pubk=pubk, aes_ctx=aes_ctx, req=req, perm_info=perm_info, cvk=cvk)
+        
+        permission = {
+            'chal_window_c': chain.create_window(10),
+            'chal_window_req': chain.create_window(10),
+            'com_window': chain.create_window(10),
+            'txs': {
+                'data': 'test'
+            },
+        }
+        
+        enclave.begin_recovery(data={
+            'pubk': pubk,
+            'aes_ctx' : aes_ctx,
+            'req': req,
+            'perm': permission,
+        })
+        
+        # verify chal_window_c one at a time
+        for j in range(0, len(permission['chal_window_c'])):
+            enclave.verify_chal_window_c(permission['chal_window_c'][j])
+            
+        # verify chal_window_req one at a time
+        for j in range(0, len(permission['chal_window_req'])):
+            enclave.verify_chal_window_req(permission['chal_window_req'][j])
+            
+        # verify com_window_s one at a time
+        for j in range(0, len(permission['com_window'])):
+            enclave.verify_com_window(permission['com_window'][j])
+        
+        print(enclave.previous_hashes)
+        print(enclave.valid_windows)
+        return 
+        rsa_ctx, sig_att = enclave.end_recovery()
+        
         cloud_p1_time = helpers.stopStopwatch(cloud_p1_start)
         
         # client part 2

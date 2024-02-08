@@ -1,4 +1,4 @@
-from . import enc_dec_scheme, enc_dec_scheme, sigma, ec_group, pi_perm
+from . import enc_dec_scheme, enc_dec_scheme, sigma, ec_group, chain
 
 msk, mvk = None, None
 retKs = {}
@@ -41,19 +41,75 @@ def remove(vk_client, perm_info, sig):
     
     return sig
 
-def recover(pubk, aes_ctx, req, perm_info, cvk):
-    req_prime = b"recover" + b"|" + pubk.export_key()
-    assert pi_perm.verify_perm() and req == req_prime
+
+recovery_data = {}
+
+valid_windows = {
+    'chal_window_c': False,
+    'chal_window_req': False,
+    'com_window': False
+}
+
+previous_hashes = {
+    'chal_window_c': None,
+    'chal_window_req': None,
+    'com_window': None
+}
+
+def begin_recovery(data):
+    global recovery_data
+    recover_data = data
     
-    retK = retKs[sigma.stringify(cvk)]
-    plaintext = enc_dec_scheme.aes_dec(retK, aes_ctx)
-    splited_plaintext = plaintext.split(b'|')
+    # verify server signature
+    # sigma.verify(svk, b"recover", ssig)
+    # sigma.verify(svk, b"recover", lsig)
     
-    assert splited_plaintext[0] == perm_info
+# def end_recovery():
+#     req_prime = b"recover" + b"|" + rec_pubk.export_key()
+#     assert verify_perm() and rec_req == req_prime
     
-    rsa_ctx = enc_dec_scheme.rsa_enc(pubKey=pubk, data=plaintext)
-    sig = sigma.sign(msk, enc_dec_scheme.rsa_ctx_to_bytes(rsa_ctx) + b'|' + perm_info)
-    return rsa_ctx, sig
+#     retK = retKs[sigma.stringify(rec_cvk)]
+#     plaintext = enc_dec_scheme.aes_dec(retK, rec_aes_ctx)
+#     splited_plaintext = plaintext.split(b'|')
+    
+#     assert splited_plaintext[0] == rec_perm_info
+    
+#     rsa_ctx = enc_dec_scheme.rsa_enc(pubKey=rec_pubk, data=plaintext)
+#     sig = sigma.sign(msk, enc_dec_scheme.rsa_ctx_to_bytes(rsa_ctx) + b'|' + rec_perm_info)
+#     return rsa_ctx, sig
+
+def verify_window(block, window_name):
+    # No need to validate, since we are not using the chain
+    if valid_windows[window_name] is False and previous_hashes[window_name] is not None:
+        return False
+    
+    if not chain.validate_block(block):
+        valid_windows[window_name] = False
+        previous_hashes[window_name] = block['hash']
+        return
+    
+    if previous_hashes[window_name] is None:
+        previous_hashes[window_name] = block['hash']
+        valid_windows[window_name] = True
+        return
+    else:
+        if previous_hashes[window_name] == block['prev_hash']:
+            previous_hashes[window_name] = block['hash']
+            valid_windows[window_name] = True
+            return
+        else:
+            valid_windows[window_name] = False
+            previous_hashes[window_name] = block['hash']
+            return False
+        
+def verify_chal_window_c(block):
+    verify_window(block, 'chal_window_c')
+
+def verify_chal_window_req(block):
+    verify_window(block, 'chal_window_req')
+
+def verify_com_window(block):
+    verify_window(block, 'com_window')
 
 def set_client_retK(vk_client, retK):
     global retKs
@@ -64,3 +120,6 @@ def set_client_secret(vk_client, data):
     
 def sign(msg):
     return sigma.sign(msk, msg)
+
+def verify_perm():
+    return True

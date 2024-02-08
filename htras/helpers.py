@@ -66,3 +66,5 @@ def create_csv(file, header, mode = 'a'):
     with open(f'results/{file}', mode) as f:
         if f.tell() == 0:
             f.write(header + '\n')
+            
+            
