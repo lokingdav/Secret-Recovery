@@ -120,9 +120,6 @@ def bench_recover():
         
         client_p1_time = helpers.stopStopwatch(client_p1_start)
         
-        # cloud part 1
-        cloud_p1_start = helpers.startStopwatch()
-        
         permission = {
             'chal_window_c': chain.create_window(10),
             'chal_window_req': chain.create_window(10),
@@ -135,9 +132,16 @@ def bench_recover():
         enclave.begin_recovery(data={
             'pubk': pubk,
             'aes_ctx' : aes_ctx,
+            'perm_info': perm_info,
             'req': req,
             'perm': permission,
+            'ssig': ssig,
+            'cvk': cvk,
+            'svk': svk,
         })
+        
+        # cloud part 1
+        cloud_p1_start = helpers.startStopwatch()
         
         # verify chal_window_c one at a time
         for j in range(0, len(permission['chal_window_c'])):
@@ -151,9 +155,9 @@ def bench_recover():
         for j in range(0, len(permission['com_window'])):
             enclave.verify_com_window(permission['com_window'][j])
         
-        print(enclave.previous_hashes)
-        print(enclave.valid_windows)
-        return 
+        # print(enclave.previous_hashes)
+        # print(enclave.valid_windows)
+        
         rsa_ctx, sig_att = enclave.end_recovery()
         
         cloud_p1_time = helpers.stopStopwatch(cloud_p1_start)
@@ -168,4 +172,7 @@ def bench_recover():
         write_to_benchsecrec('cloud-recover', i, cloud_p1_time)
         
 if __name__ == '__main__':
+    bench_store()
+    bench_remove()
+    bench_retrieved()
     bench_recover()

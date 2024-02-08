@@ -58,26 +58,46 @@ previous_hashes = {
 
 def begin_recovery(data):
     global recovery_data
-    recover_data = data
+    recovery_data = data
     
     # verify server signature
     # sigma.verify(svk, b"recover", ssig)
     # sigma.verify(svk, b"recover", lsig)
     
-# def end_recovery():
-#     req_prime = b"recover" + b"|" + rec_pubk.export_key()
-#     assert verify_perm() and rec_req == req_prime
+def end_recovery():
+    rec_pubk = recovery_data['pubk']
+    rec_aes_ctx = recovery_data['aes_ctx']
+    rec_req = recovery_data['req']
+    rec_perm_info = recovery_data['perm_info']
+    rec_cvk = recovery_data['cvk']
     
-#     retK = retKs[sigma.stringify(rec_cvk)]
-#     plaintext = enc_dec_scheme.aes_dec(retK, rec_aes_ctx)
-#     splited_plaintext = plaintext.split(b'|')
+    req_prime = b"recover" + b"|" + rec_pubk.export_key()
+    # print(req_prime, rec_req)
+    assert verify_perm() and rec_req == req_prime
     
-#     assert splited_plaintext[0] == rec_perm_info
+    retK = retKs[sigma.stringify(rec_cvk)]
+    plaintext = enc_dec_scheme.aes_dec(retK, rec_aes_ctx)
+    splited_plaintext = plaintext.split(b'|')
     
-#     rsa_ctx = enc_dec_scheme.rsa_enc(pubKey=rec_pubk, data=plaintext)
-#     sig = sigma.sign(msk, enc_dec_scheme.rsa_ctx_to_bytes(rsa_ctx) + b'|' + rec_perm_info)
-#     return rsa_ctx, sig
+    assert splited_plaintext[0] == rec_perm_info
+    
+    rsa_ctx = enc_dec_scheme.rsa_enc(pubKey=rec_pubk, data=plaintext)
+    sig = sigma.sign(msk, enc_dec_scheme.rsa_ctx_to_bytes(rsa_ctx) + b'|' + rec_perm_info)
+    
+    reset_windows()
+    
+    return rsa_ctx, sig
 
+def reset_windows():
+    valid_windows['chal_window_c'] = False
+    valid_windows['chal_window_req'] = False
+    valid_windows['com_window'] = False
+    
+    previous_hashes['chal_window_c'] = None
+    previous_hashes['chal_window_req'] = None
+    previous_hashes['com_window'] = None
+    
+    
 def verify_window(block, window_name):
     # No need to validate, since we are not using the chain
     if valid_windows[window_name] is False and previous_hashes[window_name] is not None:
@@ -103,10 +123,17 @@ def verify_window(block, window_name):
             return False
         
 def verify_chal_window_c(block):
+    # print(recovery_data)
     verify_window(block, 'chal_window_c')
+    for i in range(len(block['data'])):
+        sigma.verify(recovery_data['svk'], b"recover", recovery_data['ssig']) # sim chalwindow check
+        sigma.verify(recovery_data['svk'], b"recover", recovery_data['ssig']) # sim denial check
 
 def verify_chal_window_req(block):
     verify_window(block, 'chal_window_req')
+    for i in range(len(block['data'])):
+        sigma.verify(recovery_data['svk'], b"recover", recovery_data['ssig']) # sim chalwindow check
+        sigma.verify(recovery_data['svk'], b"recover", recovery_data['ssig']) # sim denial check
 
 def verify_com_window(block):
     verify_window(block, 'com_window')
@@ -122,4 +149,4 @@ def sign(msg):
     return sigma.sign(msk, msg)
 
 def verify_perm():
-    return True
+    return valid_windows['chal_window_c'] and valid_windows['chal_window_req'] and valid_windows['com_window']

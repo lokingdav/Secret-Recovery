@@ -7,10 +7,10 @@ import os, pickle
 miners_file = 'miners.pkl'
 miners = {}
 num_miners = 2
-sample_data = None
+trnx = None
 
 def init():
-    global miners, sample_data
+    global miners, trnx
     
     if os.path.exists(miners_file):
         with open(miners_file, 'rb') as file:
@@ -31,11 +31,18 @@ def init():
             pickle.dump(tempdata, file)
         
     with open('tx.json', 'r') as file:
-        sample_data = json.load(file)
+        trnx = json.load(file)
 
-def create_block(prev: str):
-    num_trnx = random.randint(1, 1000)
-    data = [sample_data for _ in range(num_trnx)]
+def create_block(prev: str, transactions: list = []):
+    num_trnx = 100 # random.randint(1, 1000)
+    
+    if len(transactions) == 0:
+        num_trnx = num_trnx - len(transactions)
+        data = transactions
+        
+    data = transactions + [trnx for _ in range(num_trnx)]
+    data = [json.dumps(tx) for tx in data]
+    # print(data[0])
     sigs = []
     
     for vk in miners:
