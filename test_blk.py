@@ -1,4 +1,4 @@
-from htras import chain
+from skrecovery import chain
 
 chain.init()
 blk = chain.create_block('0')

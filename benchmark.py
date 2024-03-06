@@ -1,4 +1,4 @@
-from htras import enc_dec_scheme, sigma, ec_group, helpers, enclave, chain
+from skrecovery import enc_dec_scheme, sigma, ec_group, helpers, enclave, chain
 
 enclave.install()
 

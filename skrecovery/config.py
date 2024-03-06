@@ -19,3 +19,8 @@ DB_USER = env("DB_USER")
 DB_PASS = env("DB_PASS")
 
 ENV_FILE = env("ENV_FILE")
+
+# Hyperledger Fabric
+NUM_PEERS = env("NUM_PEERS")
+NUM_ORDERERS = env("NUM_ORDERERS")
+NUM_ENDORSEMENTS = env("NUM_ENDORSEMENTS")

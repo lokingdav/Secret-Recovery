@@ -67,4 +67,11 @@ def create_csv(file, header, mode = 'a'):
         if f.tell() == 0:
             f.write(header + '\n')
             
+def get_number(prompt, default):
+    while True:
+        try:
+            return int(input(prompt) or default)
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+
             

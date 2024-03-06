@@ -1,4 +1,4 @@
-from htras import commitment
+from skrecovery import commitment
 
 def test_commitment():
     message = "Hello World!"

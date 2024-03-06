@@ -1,4 +1,4 @@
-from htras import simulator, database, config
+from skrecovery import simulator, database, config
 import argparse
     
 def migrate():
