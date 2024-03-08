@@ -1,51 +1,54 @@
 import json
 import pathlib
 from . import config
-import clickhouse_connect
-from dotenv import load_dotenv
-
-load_dotenv()
+import mysql.connector as mysql
 
 table = "ct_records"
 
 def open_db():
-    return clickhouse_connect.get_client(
-        host=config.DB_HOST, 
-        username=config.DB_USER, 
-        password=config.DB_PASS,
+    return mysql.connect(
+        host=config.DB_HOST,
+        user=config.DB_USER,
+        passwd=config.DB_PASS,
         database=config.DB_NAME
     )
 
-def create_table(name, columns, engine='MergeTree()'):
-    connection = open_db()
-    columns = ', '.join(columns)
-    ddl = f"CREATE TABLE IF NOT EXISTS {name} ({columns}) ENGINE = MergeTree()"
-    connection.command(ddl)
+def create_table(name, columns, engine='InnoDB'):
+    with open_db() as connection:
+        columns = ', '.join(columns)
+        ddl = f"CREATE TABLE IF NOT EXISTS {name} ({columns}) ENGINE = {engine}"
+        with connection.cursor() as cursor:
+            cursor.execute(ddl)
     
 def drop_table(names):
-    connection = open_db()
-    for name in names:
-        connection.command(f"DROP TABLE IF EXISTS {name}")
-    
+    with open_db() as connection:
+        with connection.cursor() as cursor:
+            for name in names:
+                cursor.execute(f"DROP TABLE IF EXISTS {name}")
+                
+                
 def insert(table, records, cols):    
-    connection = open_db()
-    connection.insert(table, data=records, column_names=cols)
+    with open_db() as connection:
+        with connection.cursor() as cursor:
+            cols = ', '.join(cols)
+            placeholders = ', '.join(['%s'] * len(cols))
+            query = f"INSERT INTO {table} ({cols}) VALUES ({placeholders})"
+            cursor.executemany(query, records)
+        connection.commit()
     
-def find_all(table, where, limit=None):
-    connection = open_db()
-    query = f"SELECT idx,cid,hash,data,prev,sig FROM {table} WHERE ({where}) ORDER BY idx DESC"
-    query += f" LIMIT {limit}" if limit else ""
-    # print(query)
-    return connection.query(query).result_rows
+def find_all(table, cols=None, where=None, order=None, limit=None):
+    items = []
+    with open_db() as connection:
+        cols = ', '.join(cols) if cols else '*'
+        with connection.cursor(dictionary=True) as cursor:
+            query = f"SELECT {cols} FROM {table}"
+            query += f" WHERE {where}" if where else ""
+            query += f" ORDER BY {order}" if order else ""
+            query += f" LIMIT {limit}" if limit else ""
+            cursor.execute(query)
+            items = cursor.fetchall()
+    return items
 
 def find(table, where):
     rows = find_all(table, where, limit=1)
-    
-    if len(rows) == 0:
-        return None
-    else:
-        return rows[0]
-    
-def query(query, params=None):
-    connection = open_db()
-    return connection.query(query, parameters=params).result_rows
+    return None if len(rows) == 0 else rows[0]

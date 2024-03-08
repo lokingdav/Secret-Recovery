@@ -1,46 +1,40 @@
+version: '3.4'
+
 services:
   redis:
     container_name: redis
     image: redis
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 1s
-      timeout: 5s
-      retries: 10
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
   db:
     container_name: db
-    image: clickhouse/clickhouse-server
-    ports:
-      - '8123:8123'
-      - '9000:9000'
-      - '9009:9009'
+    image: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: skrec
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
     volumes:
-      - htras_db_data:/var/lib/clickhouse
-      - htras_db_log:/var/log/clickhouse-server
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8123"]
-      interval: 1s
-      timeout: 5s
-      retries: 100
+      - mariadbdata:/var/lib/mysql
+    ports:
+      - "3306:3306"
 
-  htras:
-    container_name: htras
+  fabric:
+    container_name: fabric
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile-fabric
     volumes:
       - '.:/app'
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
 networks:
   default:
-    name: htras_network
+    name: skrecovery_network
 
 volumes:
-  htras_db_data:
-  htras_db_log:
+  mariadbdata:
