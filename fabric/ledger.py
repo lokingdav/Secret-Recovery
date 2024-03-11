@@ -20,3 +20,5 @@ def post(txType: TxType, proposal: dict, signature: TxSignature):
     tx.signature = signature
     tx.endorse(msp)
     tx.send_to_ordering_service()
+    
+    return tx
