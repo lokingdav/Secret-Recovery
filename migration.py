@@ -7,14 +7,14 @@ def migrate():
     database.create_table('ledgers', [
         '`id` INT AUTO_INCREMENT PRIMARY KEY',
         "`chainid` VARCHAR(255) NOT NULL",
-        '`header` JSON',
-        '`data` JSON',
-        '`metadata` JSON'
+        '`header` LONGTEXT NOT NULL',
+        '`data` LONGTEXT NOT NULL',
+        '`metadata` LONGTEXT NOT NULL'
     ])
     
     database.create_table('pending_txs', [
         'id INT AUTO_INCREMENT PRIMARY KEY', 
-        'payload JSON', 
+        'payload LONGTEXT NOT NULL', 
         'created_at TIMESTAMP'
     ])
 
