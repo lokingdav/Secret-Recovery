@@ -1,6 +1,6 @@
 from enum import Enum
 from .setup import MSP
-import time, uuid, random, json
+import datetime, uuid, random, json
 from skrecovery import sigma, config, database
 
 class TxType(Enum):
@@ -23,7 +23,7 @@ class TxHeader:
     def to_string(self):
         return json.dumps({
             'txid': self.txid,
-            'txtype': self.txtype
+            'txtype': self.txtype.value
         })
     
     @staticmethod
@@ -99,8 +99,9 @@ class Transaction:
             
     def send_to_ordering_service(self):
         cols = ['payload', 'created_at']
-        records = [self.to_string(), str(int(time.time()))]
-        database.insert('pending_txs', records=records, cols=cols)
+        records = [self.to_string(), datetime.datetime.now()]
+        # print(records)
+        database.insert('pending_txs', records=[records], cols=cols)
     
     def to_string(self):
         return json.dumps({

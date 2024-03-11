@@ -30,9 +30,10 @@ def drop_table(names):
 def insert(table, records, cols):    
     with open_db() as connection:
         with connection.cursor() as cursor:
-            cols = ', '.join(cols)
             placeholders = ', '.join(['%s'] * len(cols))
+            cols = ', '.join(cols)
             query = f"INSERT INTO {table} ({cols}) VALUES ({placeholders})"
+            # print(query)
             cursor.executemany(query, records)
         connection.commit()
     
