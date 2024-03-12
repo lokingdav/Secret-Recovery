@@ -16,47 +16,42 @@ class TxHeader:
     txtype: str = None
     creator: str = None
     
-    def __init__(self, txtype: TxType) -> None:
+    def __init__(self, txtype: str) -> None:
         self.txtype = txtype
         self.txid = uuid.uuid4().hex
-        
-    def to_string(self):
-        # return txid||txtype
-        return f"{self.txid}::{self.txtype}"
+    
+    def to_dict(self):
+        return {'txid': self.txid, 'txtype': self.txtype}
     
     @staticmethod
-    def from_string(string: str) -> 'TxHeader':
-        txid, txtype = string.split('::')
-        instance = TxHeader(txtype=txtype)
-        instance.txid = txid
+    def from_dict(data: dict) -> 'TxHeader':
+        instance = TxHeader(txtype=data['txtype'])
+        instance.txid = data['txid']
         return instance
     
 class Endorsement:
-    peer_vk: str = None # public key of the peer
-    response: dict = None # response to the proposal by the peer
-    signature: sigma.Signature = None # signature of the proposal by the peer
+    response: dict = None
+    signature: 'TxSignature' = None
     
-    def __init__(self, proposal: dict, peer_vk: str) -> None:
+    def __init__(self, proposal: dict) -> None:
         if type(proposal) is not dict:
             raise ValueError('Proposal must be a dictionary')
-        # No world state update so response == proposal
         self.response = proposal
-        self.peer_vk = peer_vk
         
-    def sign(self, peer_sk: str):
-        self.signature = sigma.sign(peer_sk, self.response)
+    def sign(self, peer_sk: str, peer_vk: str):
+        sig: sigma.Signature = sigma.sign(peer_sk, self.response)
+        self.signature = TxSignature(creator=peer_vk, signature=sig)
         
-    def to_string(self):
-        res = json.dumps(self.response)
-        sig = sigma.stringify(self.signature)
-        return f"{self.peer_vk}::{res}::{sig}"
+    def to_dict(self):
+        return {
+            'res': self.response,
+            'sig': self.signature.to_dict()
+        }
         
     @staticmethod
-    def from_string(string: str) -> 'Endorsement':
-        vk, res, sig = string.split('::')
-        res = json.loads(res)
-        instance = Endorsement(res, vk)
-        instance.signature = sigma.import_signature(sig)
+    def from_dict(data: dict) -> 'Endorsement':
+        instance = Endorsement(data['res'])
+        instance.signature = TxSignature.from_dict(data['sig'])
         return instance
 
 class TxSignature:
@@ -67,16 +62,16 @@ class TxSignature:
         self.creator = creator
         self.signature = signature
         
-    def to_string(self):
+    def to_dict(self):
         sig = sigma.stringify(self.signature)
-        return f"{self.creator}::{sig}"
+        return {'creator': self.creator, 'sig': sig}
         
     @staticmethod
-    def from_string(string: str) -> 'TxSignature':
-        creator, sig = string.split('::')
-        sig = sigma.import_signature(sig)
-        instance = TxSignature(creator=creator, signature=sig)
-        return instance
+    def from_dict(data: dict) -> 'TxSignature':
+        return TxSignature(
+            creator=data['creator'], 
+            signature=data['sig']
+        )
         
 class Transaction:
     proposal: dict = None
@@ -92,14 +87,14 @@ class Transaction:
         self.endorsements: list[Endorsement] = []
         peers = random.sample(msp.peers, config.NUM_ENDORSEMENTS)
         for (peer_sk, peer_vk) in peers:
-            endorsement = Endorsement(self.proposal, peer_vk)
-            endorsement.sign(peer_sk)
+            endorsement = Endorsement(self.proposal)
+            endorsement.sign(peer_sk, peer_vk)
             self.endorsements.append(endorsement)
             
     def send_to_ordering_service(self):
-        cols = ['payload', 'created_at']
-        records = [self.to_string(), datetime.datetime.now()]
-        database.insert('pending_txs', records=[records], cols=cols)
+        data = self.to_dict()
+        data['created_at'] = datetime.datetime.now()
+        database.insert('pending_txs', records=[data])
     
     def size_in_bytes(self):
         return len(self.to_string().encode())
@@ -108,23 +103,26 @@ class Transaction:
         return self.size_in_bytes()
     
     def to_string(self):
-        # header||proposal||response||signature||endorsements
-        header = self.header.to_string()
-        proposal = json.dumps(self.proposal)
-        response = json.dumps(self.response)
-        signature = self.signature.to_string()
-        endorsements = [e.to_string() for e in self.endorsements]
-        endorsements = ':::'.join(endorsements)
-        
-        return f"{header}||{proposal}||{response}||{signature}||{endorsements}"
+        return json.dumps(self.to_dict())
+    
+    def to_dict(self):
+        header = self.header.to_dict()
+        signature = self.signature.to_dict()
+        endorsements = [e.to_dict() for e in self.endorsements]
+        return {
+            'header': header,
+            'proposal': self.proposal,
+            'response': self.response,
+            'signature': signature,
+            'endorsements': endorsements
+        }
         
     @staticmethod
-    def from_string(string: str) -> 'Transaction':
-        header, proposal, response, signature, endorsements = string.split('||')
+    def from_dict(data: dict) -> 'Transaction':
         instance = Transaction()
-        instance.header = TxHeader.from_string(header)
-        instance.proposal = json.loads(proposal)
-        instance.response = json.loads(response)
-        instance.signature = TxSignature.from_string(signature)
-        instance.endorsements = [Endorsement.from_string(e) for e in endorsements.split(':::')]
+        instance.header = TxHeader.from_dict(data['header'])
+        instance.proposal = data['proposal']
+        instance.response = data['response']
+        instance.signature = TxSignature.from_dict(data['signature'])
+        instance.endorsements = [Endorsement.from_dict(e) for e in data['endorsements']]
         return instance

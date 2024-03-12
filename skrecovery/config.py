@@ -14,6 +14,7 @@ REDIS_PORT = env("REDIS_PORT")
 REDIS_PASS = env("REDIS_PASS")
 
 DB_HOST = env("DB_HOST", "127.0.0.1")
+DB_PORT = env("DB_PORT", 27017)
 DB_NAME = env("DB_NAME", "skrec")
 DB_USER = env("DB_USER", "root")
 DB_PASS = env("DB_PASS", "secret")

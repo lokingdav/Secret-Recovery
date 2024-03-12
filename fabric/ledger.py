@@ -5,8 +5,8 @@ from skrecovery import config, sigma
 
 msp: MSP = load_MSP()
 
-def post(txType: TxType, proposal: dict, signature: TxSignature):
-    if not type(txType) == TxType:
+def post(txType: str, proposal: dict, signature: TxSignature):
+    if not type(txType) == str:
         raise ValueError('Invalid transaction type')
     if not type(proposal) == dict:
         raise ValueError('Invalid proposal')

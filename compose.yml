@@ -13,28 +13,26 @@ services:
 
   db:
     container_name: db
-    image: mariadb
+    image: mongo
     environment:
-      MYSQL_ROOT_PASSWORD: secret
-      MYSQL_DATABASE: skrec
-      MYSQL_USER: root
-      MYSQL_PASSWORD: secret
-    volumes:
-      - mariadbdata:/var/lib/mysql
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: secret
     ports:
-      - "3306:3306"
-
-  fabric:
-    container_name: fabric
-    build:
-      context: .
-      dockerfile: Dockerfile-fabric
+      - 27017:27017
     volumes:
-      - '.:/app'
+      - mongodata:/data/db
+
+  # fabric:
+  #   container_name: fabric
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile-fabric
+  #   volumes:
+  #     - '.:/app'
 
 networks:
   default:
     name: skrecovery_network
 
 volumes:
-  mariadbdata:
+  mongodata:
