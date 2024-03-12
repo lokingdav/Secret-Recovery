@@ -44,8 +44,12 @@ def endStopwatch(test_name, start, numIters, silent=False):
         
     return test_name, total_dur_ms, avg_dur_ms
 
-def stopStopwatch(start):
+def stopStopwatch(start, secs=False):
     end_time = time.perf_counter()
+    
+    if secs:
+        return end_time - start
+    
     return (end_time - start) * 1000
 
 def random_bytes(n, hex=False):

@@ -21,6 +21,7 @@ DB_PASS = env("DB_PASS", "secret")
 ENV_FILE = env("ENV_FILE")
 
 # Hyperledger Fabric
+NUM_FAULTS = int(env("NUM_FAULTS", 3))
 NUM_PEERS = int(env("NUM_PEERS", 25))
 NUM_ORDERERS = int(env("NUM_ORDERERS", 7))
 NUM_ENDORSEMENTS = int(env("NUM_ENDORSEMENTS", 15))

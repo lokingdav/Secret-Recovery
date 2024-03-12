@@ -50,6 +50,6 @@ def find_all(table, cols=None, where=None, order=None, limit=None):
             items = cursor.fetchall()
     return items
 
-def find(table, where):
-    rows = find_all(table, where, limit=1)
+def find(table, where=None, order=None):
+    rows = find_all(table, where=where, order=order, limit=1)
     return None if len(rows) == 0 else rows[0]

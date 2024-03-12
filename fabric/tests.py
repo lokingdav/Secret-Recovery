@@ -1,5 +1,5 @@
 from skrecovery import sigma, helpers
-from fabric import ledger, transaction
+from fabric import ledger, transaction, block as ledgerBlock
 
 def create_tx():
     sk, vk = sigma.keygen()
@@ -26,9 +26,21 @@ def test_tx_serialization():
     
     assert tx1str == tx2str
     
-    print('Size in bytes')
-    print('tx1:', tx1.size())
-    print('tx2:', tx2.size())
+def test_block_serialization():
+    block: ledgerBlock.Block = ledgerBlock.Block()
+    tx = create_tx()
+    block.data.add_tx(tx.to_string())
+    block.metadata.bitmap = {'hello': 'world'}
+    bdict = block.to_dict()
+    bdict2: ledgerBlock.Block = ledgerBlock.Block.from_dict(bdict)
+    bdict2 = bdict2.to_dict()
+    print(bdict)
+    print('-'*80)
+    print(bdict2)
+    assert bdict == bdict2
     
+    # print(bdict)
     
-test_tx_serialization()
+
+if __name__ == '__main__':
+    test_block_serialization()
