@@ -1,17 +1,26 @@
-import time
-import random
-import multiprocessing
+from . import transaction, ledger
+from skrecovery import sigma, helpers
+import time, random, argparse, multiprocessing, sys, base64
 
 num_processes = 4
+
+def post_fake_tx():
+    sk, vk = sigma.keygen()
+    proposal: dict = {'fake': base64.b64encode(helpers.random_bytes(256)).decode()}
+    vk_str: str = sigma.stringify(vk)
+    signature: sigma.Signature = sigma.sign(sk, proposal)
+    tx_signature: transaction.TxSignature = transaction.TxSignature(vk_str, signature)
+    tx: transaction.Transaction = ledger.post(transaction.TxType.FAKE, proposal, tx_signature)
+    return tx
 
 def worker():
     print(f"Starting worker {multiprocessing.current_process().name}")
     try:
         while True:
-            # Your repeated task here
+            tx: transaction.Transaction = post_fake_tx()
             sleeptime = random.uniform(0, 1.5)
-            time.sleep(sleeptime)  # Example task: just sleep for 1 second
-            print(f"Worker {multiprocessing.current_process().name} is working")
+            time.sleep(sleeptime)
+            print(f"Worker {multiprocessing.current_process().name} posted tx {tx.get_id()} and slept for {sleeptime} seconds")
     except KeyboardInterrupt:
         print(f"Stopping worker {multiprocessing.current_process().name}")
 
@@ -28,7 +37,7 @@ def stop_workers(processes):
         p.terminate()
         p.join()
 
-if __name__ == "__main__":
+def simulation(args):
     processes = create_workers()
     # The main process continues doing other stuff
     try:
@@ -36,3 +45,13 @@ if __name__ == "__main__":
             time.sleep(0.1)  # Main process does something else
     except KeyboardInterrupt:
         stop_workers(processes)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='World simulation')
+    parser.add_argument('-w', '--world', action='store_true', help='Run entire simulation', required=False, default=False)
+    args = parser.parse_args()
+    
+    if args.world:
+        simulation(args)
+        
+    
