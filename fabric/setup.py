@@ -1,36 +1,57 @@
 import json
-from skrecovery import sigma, config
+from fabric import transaction
+from skrecovery import sigma, config, database
 
 filename = 'fabric-keys.json'
 
 class MSP:
-    peers: list[tuple[str, str]] = []
-    orderers: list[tuple[str, str]] = []
-
-def main():
-    data = {
-        'peers': keygen(config.NUM_PEERS),
-        'orderers': keygen(config.NUM_ORDERERS),
-    }
-    with open(filename, 'w') as file:
-        json.dump(data, file, indent=4)
-        
+    _id: str = 'fabric-keys'
+    peers: list[dict] = []
+    orderers: list[dict] = []
+    
+    def save(self):
+        database.save_fabric_keys(self.to_dict())
+    
+    def to_dict(self):
+        return {
+            '_id': self._id,
+            'peers': self.peers,
+            'orderers': self.orderers
+        }
+    
+    @staticmethod
+    def from_dict(data: dict) -> 'MSP':
+        msp = MSP()
+        msp.peers = data['peers']
+        msp.orderers = data['orderers']
+        return msp
         
 def keygen(count):
     data = []
-    for i in range(config.NUM_PEERS):
-        sk, pk = sigma.keygen()
-        data.append(sigma.export_keys(sk, pk))
+    for i in range(count):
+        sk, vk = sigma.keygen()
+        sk, vk = sigma.stringify(sk), sigma.stringify(vk)
+        data.append({'sk': sk, 'vk': vk})
     return data
 
 def load_MSP():
-    policies: MSP = None
-    with open('fabric-keys.json', 'r') as file:
-        data = json.load(file)
-        policies = MSP()
-        policies.peers = [sigma.parse_keys(key, imp = False) for key in data['peers']]
-        policies.orderers = [sigma.parse_keys(key, imp = False) for key in data['orderers']]
-    return policies
+    data = database.load_fabric_keys()
+    msp: MSP = MSP()
+    msp.from_dict(data)
+    return msp
 
+def main():
+    existing_data = database.load_fabric_keys()
+    
+    if existing_data:
+        choice = input('Fabric keys already exist. Overwrite? (y/n): ')
+        if choice.lower() != 'y':
+            return
+        
+    msp: MSP = MSP()
+    msp.peers = keygen(config.NUM_PEERS)
+    msp.orderers = keygen(config.NUM_ORDERERS)
+    msp.save()
+    
 if __name__ == '__main__':
     main()

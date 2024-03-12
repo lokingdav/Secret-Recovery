@@ -5,6 +5,7 @@ from skrecovery import sigma, config, database
 
 class TxType(Enum):
     FAKE = 'fake'
+    GENESIS = 'genesis'
     REQUEST = 'request'
     RESPONSE = 'response'
     SERVER_REGISTER = 'server-register'
@@ -14,7 +15,6 @@ class TxType(Enum):
 class TxHeader:
     txid: str = None
     txtype: str = None
-    creator: str = None
     
     def __init__(self, txtype: str) -> None:
         self.txtype = txtype
@@ -94,7 +94,7 @@ class Transaction:
     def send_to_ordering_service(self):
         data = self.to_dict()
         data['created_at'] = datetime.datetime.now()
-        database.insert('pending_txs', records=[data])
+        database.insert_pending_txs(records=[data])
     
     def size_in_bytes(self):
         return len(self.to_string().encode())
@@ -110,6 +110,7 @@ class Transaction:
         signature = self.signature.to_dict()
         endorsements = [e.to_dict() for e in self.endorsements]
         return {
+            '_id': self.get_id(),
             'header': header,
             'proposal': self.proposal,
             'response': self.response,

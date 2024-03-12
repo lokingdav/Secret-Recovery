@@ -15,20 +15,49 @@ def insert(table, records):
         results = collection.insert_many(records)
         
     return results.inserted_ids
-    
-def find_all(table, cols=None, where=None, order=None, limit=None):
-    items = []
-    with open_db() as connection:
-        cols = ', '.join(cols) if cols else '*'
-        with connection.cursor(dictionary=True) as cursor:
-            query = f"SELECT {cols} FROM {table}"
-            query += f" WHERE {where}" if where else ""
-            query += f" ORDER BY {order}" if order else ""
-            query += f" LIMIT {limit}" if limit else ""
-            cursor.execute(query)
-            items = cursor.fetchall()
-    return items
 
-def find(table, where=None, order=None):
-    rows = find_all(table, where=where, order=order, limit=1)
-    return None if len(rows) == 0 else rows[0]
+def save_fabric_keys(data: dict):
+    existing: dict = None
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['fabric_keys']
+        existing = collection.find_one()
+        if existing:
+            collection.update_one({'_id': existing['_id']}, {'$set': data})
+        else:
+            collection.insert_one(data)
+
+def load_fabric_keys():
+    keys: dict = None
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['fabric_keys']
+        keys = collection.find_one()
+    return keys
+
+def insert_pending_txs(records):
+    return insert('pending_txs', records)
+    
+def get_latest_block():
+    block: dict = None
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['ledgers']
+        block = collection.find_one(sort=[('_id', -1)])
+    return block
+
+def find_block_by_number(number: int):
+    block: dict = None
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['ledgers']
+        block = collection.find_one({'_id': number})
+    return block
+
+def get_pending_txs():
+    txs: list[dict] = []
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['pending_txs']
+        txs = list(collection.find(sort=[('created_at', -1)]))
+    return txs

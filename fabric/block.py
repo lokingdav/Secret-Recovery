@@ -8,10 +8,7 @@ class BlockHeader:
     current_hash: str = None
     previous_hash: str = None
     
-    def __init__(self, header: 'BlockHeader' = None) -> None:
-        self.update_from_last(header)
-    
-    def update_from_last(self, header: 'BlockHeader'):
+    def update_from_last_block(self, header: 'BlockHeader'):
         if header:
             self.previous_hash = header.current_hash
             self.number = header.number + 1
@@ -19,12 +16,25 @@ class BlockHeader:
             self.previous_hash = None
             self.number = 1
     
-    def to_string(self):
-        return f"{self.number}::{self.current_hash}::{self.previous_hash}"
+    def to_dict(self):
+        return {
+            'number': self.number,
+            'chainid': self.chainid,
+            'current_hash': self.current_hash,
+            'previous_hash': self.previous_hash
+        }
     
-    def from_string(self, string: str):
-        number, current_hash, previous_hash = string.split('::')
-        self.number, self.current_hash, self.previous_hash = number, current_hash, previous_hash
+    def from_dict(self, data: dict):
+        self.number = int(data['number'])
+        self.chainid = data['chainid']
+        self.current_hash = data['current_hash']
+        self.previous_hash = data['previous_hash']
+        
+    @staticmethod
+    def from_dict(data: dict) -> 'BlockHeader':
+        header = BlockHeader()
+        header.from_dict(data)
+        return header
         
 class BlockData:
     transactions: list[Transaction] = []
@@ -32,8 +42,8 @@ class BlockData:
     def __init__(self, transactions: list[Transaction] = []):
         self.transactions = transactions
         
-    def add_tx(self, tx: str):
-        tx: Transaction = Transaction.from_string(tx)
+    def add_tx(self, tx: dict | Transaction):
+        tx: Transaction = Transaction.from_dict(tx) if isinstance(tx, dict) else tx
         self.transactions.append(tx)
         return tx.get_id()
         
@@ -43,13 +53,12 @@ class BlockData:
     def get_hash(self):
         return helpers.hash256(json.dumps(self.transactions))
     
-    def to_string(self):
-        return json.dumps([tx.to_string() for tx in self.transactions])
+    def to_dict(self):
+        return [tx.to_dict() for tx in self.transactions]
     
     @staticmethod
-    def from_string(string: str):
-        txs = json.loads(string)
-        txs = [Transaction.from_string(tx) for tx in txs]
+    def from_dict(txs: dict):
+        txs = [Transaction.from_dict(tx) for tx in txs]
         return BlockData(txs)
     
 class BlockMetaData:
@@ -59,15 +68,14 @@ class BlockMetaData:
     def __init__(self, bitmap: dict = None, signature: TxSignature = None):
         self.bitmap, self.signature = bitmap, signature
         
-    def to_string(self):
-        sig = self.signature.to_string() if self.signature else None
-        return json.dumps([self.bitmap, sig])
+    def to_dict(self) -> dict:
+        sig = self.signature.to_dict() if self.signature else None
+        return {'bitmap': self.bitmap, 'sig': sig}
     
     @staticmethod
-    def from_string(string: str):
-        bitmap, sig = json.loads(string)
-        sig = TxSignature.from_string(sig) if sig else None
-        return BlockMetaData(bitmap, sig)
+    def from_dict(data: dict) -> 'BlockMetaData':
+        sig = TxSignature.from_dict(data['sig']) if data['sig'] else None
+        return BlockMetaData(data['bitmap'], sig)
         
 class Block:
     header: BlockHeader = None
@@ -75,31 +83,33 @@ class Block:
     metadata: BlockMetaData = None
     
     def __init__(self) -> None:
-        db_block = database.find('ledgers', order='id DESC')
-        last_block: Block = Block.from_dict(db_block) if db_block else None
-        
-        self.header = BlockHeader(last_block.header if last_block else None)
+        latest_block: dict = database.get_latest_block()
+        self.header = BlockHeader()
+        self.header.update_from_last_block(latest_block)
         self.data = BlockData()
         self.metadata = BlockMetaData()
         
+    def save(self):
+        pass
+        
     def to_dict(self):
         return {
-            'id': self.header.number,
+            '_id': self.header.number,
             'chainid': self.header.chainid,
-            'header': self.header.to_string(),
-            'data': self.data.to_string(),
-            'metadata': self.metadata.to_string()
+            'header': self.header.to_dict(),
+            'data': self.data.to_dict(),
+            'metadata': self.metadata.to_dict()
         }
         
     @staticmethod
     def from_dict(data: dict) -> 'Block':
         block: Block = Block()
-        block.header.from_string(data['header'])
-        block.data = BlockData.from_string(data['data'])
-        block.metadata = BlockMetaData.from_string(data['metadata'])
+        block.header.from_dict(data['header'])
+        block.data = BlockData.from_dict(data['data'])
+        block.metadata = BlockMetaData.from_dict(data['metadata'])
         return block
         
     @staticmethod
     def from_number(number: int):
-        data = database.find('ledgers', where=f"id={number}")
+        data = database.find_block_by_number(number)
         return Block.from_dict(data)

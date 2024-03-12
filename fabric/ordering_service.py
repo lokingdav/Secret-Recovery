@@ -1,7 +1,7 @@
 import argparse, time, random
 from fabric.setup import load_MSP, MSP
 from skrecovery import helpers, database, sigma
-from fabric.transaction import Transaction
+from fabric.transaction import Transaction, TxHeader, TxType, TxSignature
 from fabric.block import BlockData, BlockMetaData, BlockHeader, Block
 
 msp: MSP = load_MSP()
@@ -23,46 +23,54 @@ class OSLeader(OSNode):
     def __init__(self, index: int):
         super().__init__(index)
         
-    def assemble_transactions(self):
-        limit = 10000 # max number of pending transactions to fetch
-        txorder = 'created_at DESC, id DESC'
-        pending_txs = database.find_all('pending_txs', order=txorder, limit=limit)
-        
-        if len(pending_txs) < 10:
-            return None
-        
-        batch_items = []
-        # create block and update header and data
+    def assemble_transactions(self, pending_txs: list[dict]):
+        if not pending_txs:
+            raise ValueError('No transactions to assemble')
         block: Block = Block()
-        block.header = BlockHeader()
-        block.header.init()
-        block.data = BlockData()
-        
         for tx_dict in pending_txs:
-            txid = block_data.add_tx(tx_dict['payload'])
-            batch_items.append((txid, tx_dict['id']))
-            
-        return block_data, batch_items
+            block.data.add_tx(tx_dict)
+        return block
             
 def get_orderers():
     leader_index = random.randint(0, len(msp.orderers) - 1)
     leader, followers = None, []
-    
     for i in range(len(msp.orderers)):
         if i == leader_index:
             leader = OSLeader(i)
         else:
             followers.append(OSNode(i))
-    
     return leader, followers
 
-def start(args):
+def initialize_genesis_block_if_missing():
+    # check if genesis block exists and return
+    latest_block: dict = database.get_latest_block()
+    if latest_block:
+        return
+    
+    # create transaction for genesis block
+    sk, vk = sigma.keygen()
+    tx: Transaction = Transaction()
+    tx.proposal = msp.to_dict()
+    tx.response = tx.proposal
+    tx.header = TxHeader(TxType.GENESIS.value)
+    tx.signature = TxSignature(sigma.stringify(vk), sigma.sign(sk, tx.proposal))
+    tx.endorse(msp)
+    
     leader, followers = get_orderers()
+    block: Block = begin_consensus(leader, followers, [tx.to_dict()])
+    block.save()
+
+def begin_consensus(pending_txs: list[dict], leader: OSLeader, followers: list[OSNode]):
+    # 1. The leader assembles transactions
+    block: Block = leader.assemble_transactions(pending_txs)
+
+def start_ordering_service(args):
+    leader, followers = get_orderers()
+    
     while True:
         start_time = helpers.startStopwatch()
-        # 1. The leader assembles transactions
-        block: Block = leader.assemble_transactions()
-        
+        transactions = database.get_pending_txs()
+        begin_consensus(leader, followers)
         elapsed = helpers.stopStopwatch(start_time, secs=True)
         if elapsed < 2:
             time.sleep(2 - elapsed)
@@ -70,4 +78,6 @@ def start(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Start ordering service simulation.')
     args = parser.parse_args()
-    # start(args)
+    
+    initialize_genesis_block_if_missing()
+    # start_ordering_service(args)
