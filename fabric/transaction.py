@@ -85,6 +85,9 @@ class Transaction:
     signature: TxSignature = None
     endorsements: list[Endorsement] = None
     
+    def get_id(self):
+        return self.header.txid
+    
     def endorse(self, msp: MSP):
         self.endorsements: list[Endorsement] = []
         peers = random.sample(msp.peers, config.NUM_ENDORSEMENTS)
