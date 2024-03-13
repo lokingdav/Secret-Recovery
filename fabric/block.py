@@ -1,33 +1,30 @@
 import json
-from .transaction import Transaction, TxSignature
+from .transaction import Transaction, Signer
 from skrecovery import helpers, sigma, database
 
 class BlockHeader:
     number: int = 0
     chainid: str = 'skrec'
-    current_hash: str = None
+    data_hash: str = None
     previous_hash: str = None
     
     def update_from_last_block(self, header: 'BlockHeader'):
         if header:
-            self.previous_hash = header.current_hash
+            self.previous_hash = header.data_hash
             self.number = header.number + 1
-        else:
-            self.previous_hash = None
-            self.number = 1
     
     def to_dict(self):
         return {
             'number': self.number,
             'chainid': self.chainid,
-            'current_hash': self.current_hash,
+            'data_hash': self.data_hash,
             'previous_hash': self.previous_hash
         }
     
     def from_dict(self, data: dict):
         self.number = int(data['number'])
         self.chainid = data['chainid']
-        self.current_hash = data['current_hash']
+        self.data_hash = data['data_hash']
         self.previous_hash = data['previous_hash']
         
     @staticmethod
@@ -51,7 +48,7 @@ class BlockData:
         self.transactions = []
         
     def get_hash(self):
-        return helpers.hash256(json.dumps(self.transactions))
+        return helpers.hash256(json.dumps(self.to_dict()))
     
     def to_dict(self):
         return [tx.to_dict() for tx in self.transactions]
@@ -63,18 +60,20 @@ class BlockData:
     
 class BlockMetaData:
     bitmap: dict = None
-    signature: TxSignature = None
+    creator: Signer = None
+    verifiers: list[Signer] = []
+    last_config_block_number: int = 0
     
-    def __init__(self, bitmap: dict = None, signature: TxSignature = None):
-        self.bitmap, self.signature = bitmap, signature
+    def __init__(self, bitmap: dict = None, creator: Signer = None):
+        self.bitmap, self.creator = bitmap, creator
         
     def to_dict(self) -> dict:
-        sig = self.signature.to_dict() if self.signature else None
+        sig = self.creator.to_dict() if self.creator else None
         return {'bitmap': self.bitmap, 'sig': sig}
     
     @staticmethod
     def from_dict(data: dict) -> 'BlockMetaData':
-        sig = TxSignature.from_dict(data['sig']) if data['sig'] else None
+        sig = Signer.from_dict(data['sig']) if data['sig'] else None
         return BlockMetaData(data['bitmap'], sig)
         
 class Block:
@@ -88,6 +87,15 @@ class Block:
         self.header.update_from_last_block(latest_block)
         self.data = BlockData()
         self.metadata = BlockMetaData()
+        
+    def set_data_hash(self):
+        self.header.data_hash = self.data.get_hash()
+        
+    def get_signable_data(self):
+        return {
+            'data': self.data.to_dict(),
+            'previous_hash': self.header.previous_hash,
+        }
         
     def save(self):
         pass

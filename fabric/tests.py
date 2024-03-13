@@ -7,7 +7,7 @@ def create_tx():
     proposal: dict = {'key': 'hello world!'}
     vk_str: str = sigma.stringify(vk)
     signature: sigma.Signature = sigma.sign(sk, proposal)
-    tx_signature: transaction.TxSignature = transaction.TxSignature(vk_str, signature)
+    tx_signature: transaction.Signer = transaction.Signer(vk_str, signature)
     tx: transaction.Transaction = ledger.post(transaction.TxType.FAKE.value, proposal, tx_signature)
     return tx
 

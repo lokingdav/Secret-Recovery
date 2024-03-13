@@ -31,7 +31,7 @@ class TxHeader:
     
 class Endorsement:
     response: dict = None
-    signature: 'TxSignature' = None
+    signature: 'Signer' = None
     
     def __init__(self, proposal: dict) -> None:
         if type(proposal) is not dict:
@@ -40,7 +40,7 @@ class Endorsement:
         
     def sign(self, peer_sk: str, peer_vk: str):
         sig: sigma.Signature = sigma.sign(peer_sk, self.response)
-        self.signature = TxSignature(creator=peer_vk, signature=sig)
+        self.signature = Signer(creator=peer_vk, signature=sig)
         
     def to_dict(self):
         return {
@@ -51,10 +51,10 @@ class Endorsement:
     @staticmethod
     def from_dict(data: dict) -> 'Endorsement':
         instance = Endorsement(data['res'])
-        instance.signature = TxSignature.from_dict(data['sig'])
+        instance.signature = Signer.from_dict(data['sig'])
         return instance
 
-class TxSignature:
+class Signer:
     creator: str = None
     signature: sigma.Signature = None
     
@@ -62,13 +62,16 @@ class TxSignature:
         self.creator = creator
         self.signature = signature
         
+    def verify(self, data: dict):
+        return sigma.verify(self.creator, data, self.signature)
+        
     def to_dict(self):
         sig = sigma.stringify(self.signature)
         return {'creator': self.creator, 'sig': sig}
         
     @staticmethod
-    def from_dict(data: dict) -> 'TxSignature':
-        return TxSignature(
+    def from_dict(data: dict) -> 'Signer':
+        return Signer(
             creator=data['creator'], 
             signature=data['sig']
         )
@@ -77,7 +80,7 @@ class Transaction:
     proposal: dict = None
     response: dict = None
     header: TxHeader = None
-    signature: TxSignature = None
+    signature: Signer = None
     endorsements: list[Endorsement] = None
     
     def get_id(self):
@@ -124,6 +127,6 @@ class Transaction:
         instance.header = TxHeader.from_dict(data['header'])
         instance.proposal = data['proposal']
         instance.response = data['response']
-        instance.signature = TxSignature.from_dict(data['signature'])
+        instance.signature = Signer.from_dict(data['signature'])
         instance.endorsements = [Endorsement.from_dict(e) for e in data['endorsements']]
         return instance

@@ -61,3 +61,10 @@ def get_pending_txs():
         collection = db['pending_txs']
         txs = list(collection.find(sort=[('created_at', -1)]))
     return txs
+
+def delete_pending_txs(txs: list[dict]):
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['pending_txs']
+        ids = [tx['_id'] for tx in txs]
+        collection.delete_many({'_id': {'$in': ids}})

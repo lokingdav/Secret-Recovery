@@ -9,7 +9,7 @@ def post_fake_tx():
     proposal: dict = {'fake': base64.b64encode(helpers.random_bytes(256)).decode()}
     vk_str: str = sigma.stringify(vk)
     signature: sigma.Signature = sigma.sign(sk, proposal)
-    tx_signature: transaction.TxSignature = transaction.TxSignature(vk_str, signature)
+    tx_signature: transaction.Signer = transaction.Signer(vk_str, signature)
     tx: transaction.Transaction = ledger.post(transaction.TxType.FAKE, proposal, tx_signature)
     return tx
 
