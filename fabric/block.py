@@ -1,6 +1,6 @@
 import json
 from .transaction import Transaction, Signer
-from skrecovery import helpers, sigma, database
+from skrecovery import helpers, sigma, database, config
 
 class BlockHeader:
     number: int = 0
@@ -20,17 +20,14 @@ class BlockHeader:
             'data_hash': self.data_hash,
             'previous_hash': self.previous_hash
         }
-    
-    def from_dict(self, data: dict):
-        self.number = int(data['number'])
-        self.chainid = data['chainid']
-        self.data_hash = data['data_hash']
-        self.previous_hash = data['previous_hash']
         
     @staticmethod
     def from_dict(data: dict) -> 'BlockHeader':
         header = BlockHeader()
-        header.from_dict(data)
+        header.number = int(data['number'])
+        header.chainid = data['chainid']
+        header.data_hash = data['data_hash']
+        header.previous_hash = data['previous_hash']
         return header
         
 class BlockData:
@@ -68,25 +65,34 @@ class BlockMetaData:
         self.bitmap, self.creator = bitmap, creator
         
     def to_dict(self) -> dict:
-        sig = self.creator.to_dict() if self.creator else None
-        return {'bitmap': self.bitmap, 'sig': sig}
+        creator = self.creator.to_dict() if self.creator else None
+        return {
+            'bitmap': self.bitmap, 
+            'creator': creator,
+            'verifiers': [v.to_dict() for v in self.verifiers],
+            'last_config_block_number': self.last_config_block_number
+        }
     
     @staticmethod
     def from_dict(data: dict) -> 'BlockMetaData':
-        sig = Signer.from_dict(data['sig']) if data['sig'] else None
-        return BlockMetaData(data['bitmap'], sig)
+        creator = Signer.from_dict(data['creator']) if data['creator'] else None
+        metadata: BlockMetaData = BlockMetaData(data['bitmap'], creator)
+        metadata.verifiers = [Signer.from_dict(v) for v in data['verifiers']]
+        metadata.last_config_block_number = data['last_config_block_number']
+        return metadata
         
 class Block:
     header: BlockHeader = None
     data: BlockData = None
     metadata: BlockMetaData = None
     
-    def __init__(self) -> None:
-        latest_block: dict = database.get_latest_block()
-        self.header = BlockHeader()
-        self.header.update_from_last_block(latest_block)
-        self.data = BlockData()
-        self.metadata = BlockMetaData()
+    def __init__(self, init=True) -> None:
+        if init:
+            self.header = BlockHeader()
+            latest_block: dict = database.get_latest_block()
+            self.header.update_from_last_block(latest_block)
+            self.data = BlockData()
+            self.metadata = BlockMetaData()
         
     def set_data_hash(self):
         self.header.data_hash = self.data.get_hash()
@@ -100,6 +106,24 @@ class Block:
     def save(self):
         database.save_block(self.to_dict())
         
+    def verify(self):
+        # verify creator signature
+        if not self.metadata.creator.verify(self.get_signable_data()):
+            print('Creator signature invalid')
+            return False
+        
+        # verify verifiers signatures
+        counter, quorom = 0, 2 * config.NUM_FAULTS + 1
+        
+        for verifier in self.metadata.verifiers:
+            if verifier.verify(self.get_signable_data()):
+                counter += 1
+
+        return counter >= quorom
+            
+    def verify_previous_block(self, prev_block: 'Block'):
+        return self.header.previous_hash == prev_block.header.data_hash
+        
     def to_dict(self):
         return {
             '_id': self.header.number,
@@ -111,8 +135,8 @@ class Block:
         
     @staticmethod
     def from_dict(data: dict) -> 'Block':
-        block: Block = Block()
-        block.header.from_dict(data['header'])
+        block: Block = Block(init=False)
+        block.header = BlockHeader.from_dict(data['header'])
         block.data = BlockData.from_dict(data['data'])
         block.metadata = BlockMetaData.from_dict(data['metadata'])
         return block

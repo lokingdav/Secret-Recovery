@@ -59,7 +59,7 @@ def get_pending_txs():
     with open_db() as connection:
         db = connection[config.DB_NAME]
         collection = db['pending_txs']
-        txs = list(collection.find(sort=[('created_at', -1)], limit=10000))
+        txs = list(collection.find(sort=[('created_at', -1)], limit=config.MAX_TXS_PER_BLOCK))
     return txs
 
 def delete_pending_txs(txs: list[dict]):
@@ -76,3 +76,11 @@ def save_block(data: dict):
         block = collection.find_one({'_id': data['_id']})
         if not block:
             collection.insert_one(data)
+            
+def get_chain():
+    chain: list[dict] = []
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['ledgers']
+        chain = list(collection.find(sort=[('_id', 1)]))
+    return chain

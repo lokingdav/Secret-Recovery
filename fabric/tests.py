@@ -1,6 +1,7 @@
 import json
-from skrecovery import sigma, helpers
-from fabric import ledger, transaction, block as ledgerBlock
+from skrecovery import sigma, helpers, database
+from fabric import ledger, transaction
+from fabric.block import Block
 
 def create_tx():
     sk, vk = sigma.keygen()
@@ -23,18 +24,32 @@ def test_tx_serialization():
     assert tx1str == tx2str
     
 def test_block_serialization():
-    block: ledgerBlock.Block = ledgerBlock.Block()
+    block: Block = Block()
     tx = create_tx()
     block.data.add_tx(tx.to_string())
     block.metadata.bitmap = {'hello': 'world'}
     bdict = block.to_dict()
-    bdict2: ledgerBlock.Block = ledgerBlock.Block.from_dict(bdict)
+    bdict2: Block = Block.from_dict(bdict)
     bdict2 = bdict2.to_dict()
-    print(bdict)
-    print('-'*80)
-    print(bdict2)
     assert bdict == bdict2
     
-
+def verify_blockchain():
+    chain: list[Block] = database.get_chain()
+    num_blocks = len(chain)
+    
+    for i in range(0, num_blocks):
+        block: Block = Block.from_dict(chain[i])
+        assert block.to_dict() == chain[i]
+        assert block.verify()
+        
+        if i == 0:
+            continue
+        prev_block: Block = Block.from_dict(chain[i - 1])
+        assert block.verify_previous_block(prev_block)
+        
+        print(f'Verified block id: {chain[i]["_id"]}, {i+1} of {num_blocks}')
+    print('All blocks verified!')
+        
+        
 if __name__ == '__main__':
-    test_ledger_post()
+    verify_blockchain()
