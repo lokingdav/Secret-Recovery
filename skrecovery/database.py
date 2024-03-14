@@ -84,3 +84,11 @@ def get_chain():
         collection = db['ledgers']
         chain = list(collection.find(sort=[('_id', 1)]))
     return chain
+
+def find_block_by_transaction_id(tx_id: str):
+    block: dict = None
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['ledgers']
+        block = collection.find_one({'data._id': tx_id})
+    return block

@@ -52,4 +52,5 @@ def verify_blockchain():
         
         
 if __name__ == '__main__':
-    verify_blockchain()
+    blk = database.find_block_by_transaction_id('d21cf79cdfe54af88779c85d69a6a04e')
+    print(blk)

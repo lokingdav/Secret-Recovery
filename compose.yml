@@ -1,16 +1,6 @@
 version: '3.4'
 
 services:
-  redis:
-    container_name: redis
-    image: redis
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 5s
-
   db:
     container_name: db
     image: mongo
@@ -22,13 +12,26 @@ services:
     volumes:
       - mongodata:/data/db
 
-  # fabric:
-  #   container_name: fabric
+  # fabric_ordering_service:
+  #   container_name: ordering_service
   #   build:
   #     context: .
-  #     dockerfile: Dockerfile-fabric
+  #     dockerfile: Dockerfile-fabric-ordering-service
   #   volumes:
   #     - '.:/app'
+  #   depends_on:
+  #     - db
+
+  # fabric_noise_simulation:
+  #   container_name: noise_simulation
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile-fabric-noise-simulation
+  #   volumes:
+  #     - '.:/app'
+  #   depends_on:
+  #     - db
+  #     - fabric_ordering_service
 
 networks:
   default:
