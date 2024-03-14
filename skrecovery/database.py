@@ -68,3 +68,11 @@ def delete_pending_txs(txs: list[dict]):
         collection = db['pending_txs']
         ids = [tx['_id'] for tx in txs]
         collection.delete_many({'_id': {'$in': ids}})
+        
+def save_block(data: dict):
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['ledgers']
+        block = collection.find_one({'_id': data['_id']})
+        if not block:
+            collection.insert_one(data)

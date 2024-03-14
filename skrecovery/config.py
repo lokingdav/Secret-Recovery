@@ -2,7 +2,7 @@ from os import getenv
 from dotenv import load_dotenv
 from collections import namedtuple
 
-load_dotenv()
+load_dotenv(override=True)
 
 def env(envname, default=""):
     value = getenv(envname)
@@ -22,7 +22,7 @@ DB_PASS = env("DB_PASS", "secret")
 ENV_FILE = env("ENV_FILE")
 
 # Hyperledger Fabric
-NUM_FAULTS = int(env("NUM_FAULTS", 3))
+NUM_FAULTS = int(env("NUM_FAULTS", 2))
 NUM_PEERS = int(env("NUM_PEERS", 25))
 NUM_ORDERERS = int(env("NUM_ORDERERS", 7))
 NUM_ENDORSEMENTS = int(env("NUM_ENDORSEMENTS", 15))

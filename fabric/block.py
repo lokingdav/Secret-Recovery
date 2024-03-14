@@ -98,7 +98,7 @@ class Block:
         }
         
     def save(self):
-        pass
+        database.save_block(self.to_dict())
         
     def to_dict(self):
         return {

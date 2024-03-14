@@ -36,9 +36,7 @@ def keygen(count):
 
 def load_MSP():
     data = database.load_fabric_keys()
-    msp: MSP = MSP()
-    msp.from_dict(data)
-    return msp
+    return MSP.from_dict(data)
 
 def main():
     existing_data = database.load_fabric_keys()

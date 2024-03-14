@@ -1,5 +1,4 @@
 from enum import Enum
-from .setup import MSP
 import datetime, uuid, random, json, sys
 from skrecovery import sigma, config, database
 
@@ -86,12 +85,12 @@ class Transaction:
     def get_id(self):
         return self.header.txid
     
-    def endorse(self, msp: MSP):
+    def endorse(self, msp):
         self.endorsements: list[Endorsement] = []
         peers = random.sample(msp.peers, config.NUM_ENDORSEMENTS)
-        for (peer_sk, peer_vk) in peers:
+        for keys in peers:
             endorsement = Endorsement(self.proposal)
-            endorsement.sign(peer_sk, peer_vk)
+            endorsement.sign(keys['sk'], keys['vk'])
             self.endorsements.append(endorsement)
             
     def send_to_ordering_service(self):
