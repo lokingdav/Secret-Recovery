@@ -61,7 +61,10 @@ class Signer:
         self.creator = creator if type(creator) is str else sigma.stringify(creator)
         self.signature = signature
         
-    def verify(self, data: dict):
+    def verify(self, data: dict, vk: str = None):
+        if vk:
+            return sigma.verify(vk, data, self.signature)
+        
         return sigma.verify(self.creator, data, self.signature)
         
     def to_dict(self):
