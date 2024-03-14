@@ -58,7 +58,7 @@ class Signer:
     signature: sigma.Signature = None
     
     def __init__(self, creator: str, signature: sigma.Signature) -> None:
-        self.creator = creator
+        self.creator = creator if type(creator) is str else sigma.stringify(creator)
         self.signature = signature
         
     def verify(self, data: dict):

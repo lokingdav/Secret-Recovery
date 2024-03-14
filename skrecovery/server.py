@@ -1,43 +1,90 @@
 import json
-from . import helpers, ledger, sigma, store, database
+from fabric import ledger
+from fabric.transaction import TxType, Signer, Transaction
+from fabric.block import Block
+from . import helpers, sigma, store, database
 
 SERVERS = 'servers'
 
-class server:
-    id: str
-    cid: str
+class Server:
+    id: str = None,
+    regtx_id: str = None
+    chainid: str = 'skrec'
+    sk: sigma.PrivateKey = None
+    vk: sigma.PublicKey = None
     
-    def __init__(self, id) -> None:
+    def __init__(self, id: int = 0) -> None:
         self.id = f"s{id}"
         
-    def register(self, cid: str):
-        self.cid = cid
-        key = SERVERS + ":" + self.id
-        self.sk, self.vk, _1, _2 = helpers.setup(key)
-        pubk_str = sigma.stringify(self.vk)
-        data = json.dumps({
-            'type': ledger.Block.TYPE_SERVER_REG,
-            'action': 'register',
-            'vk_s': pubk_str,
-        })
-        self.regb = ledger.post(data=data, cid=cid)
+    def register(self):
+        user: dict = database.find_user_by_id(self.id)
         
-    def register_client(self, block: ledger.Block):
-        id = block.datakey()
-        client = database.query('SELECT * FROM clients WHERE id=%s', [id])
-        # print(client)
-        if client:
+        if user:
+            self.setData(user)
+            return
+        
+        # Generate keypair
+        sk, vk = sigma.keygen()
+        self.sk, self.vk = sk, vk
+        
+        # Post registration to ledger
+        proposal = {'action': 'register','vk': sigma.stringify(vk)}
+        creator: Signer = Signer(proposal['vk'], sigma.sign(self.sk, proposal))
+        tx: Transaction = ledger.post(TxType.SERVER_REGISTER.value, proposal, creator)
+        self.regtx_id = tx.get_id()
+        
+        # Save to database
+        database.insert_user(self.to_dict())
+        
+    def register_client(self, client_regtx_id: str):
+        # Find client registration transaction
+        block: Block = ledger.find_block_by_transaction_id(client_regtx_id)
+        regtx: Transaction = block.find_transaction_by_id(client_regtx_id)
+        
+        # Check if client is already registered and abort
+        perm_hash: str = helpers.hash256(regtx)
+        is_customer = database.get_server_customer(self.id, perm_hash)
+        if is_customer:
             return None
         
-        database.insert('clients', [[id, block.data]], ['id', 'data'])
+        # Authorize client registration
+        database.insert_server_customer(self.id, perm_hash)
+        data = {
+            'action': TxType.AUTHORIZE_REGISTRATION.value,
+            'perm_info': regtx.proposal,
+            'authorization': Signer(self.vk, sigma.sign(self.sk, regtx.proposal))
+        }
+        creator: Signer = Signer(self.vk, sigma.sign(self.sk, data))
+        tx: Transaction = ledger.post(TxType.AUTHORIZE_REGISTRATION.value, data, creator)
+        return tx
+    
+    def setData(self, data: dict):
+        self.id = data['_id']
+        self.vk = sigma.import_pub_key(data['vk'])
+        self.sk = sigma.import_priv_key(data['sk'])
+        self.regtx_id = data['regtx_id']
+        self.chainid = data['chainid']
+        return self
+    
+    def to_dict(self):
+        return {
+            '_id': self.id,
+            'vk': sigma.stringify(self.vk),
+            'sk': sigma.stringify(self.sk),
+            'regtx_id': self.regtx_id,
+            'chainid': self.chainid
+        }
+    
+    @staticmethod
+    def from_dict(data: dict):
+        server = Server()
+        server.id = data['_id']
+        server.vk = sigma.import_pub_key(data['vk'])
+        server.sk = sigma.import_priv_key(data['sk'])
+        server.regtx_id = data['regtx_id']
+        server.chainid = data['chainid']
+        return server
         
-        sig = sigma.sign(self.sk, block.data)
-        data = block.parse_data()
-        data['type'] = ledger.Block.TYPE_AUTHORIZE_REG
-        data['sig'] = sigma.stringify(sig)
-        data = helpers.stringify(data)
-        ledger.post(data=data, cid=self.cid)
-        return sig
         
         
         

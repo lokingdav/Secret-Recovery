@@ -123,7 +123,13 @@ class Block:
             
     def verify_previous_block(self, prev_block: 'Block'):
         return self.header.previous_hash == prev_block.header.data_hash
-        
+    
+    def find_transaction_by_id(self, txid: str):
+        for tx in self.data.transactions:
+            if tx.get_id() == txid:
+                return tx
+        return None
+    
     def to_dict(self):
         return {
             '_id': self.header.number,

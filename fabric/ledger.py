@@ -1,7 +1,8 @@
 import json, random
 from .setup import load_MSP, MSP
-from .transaction import Transaction, Endorsement, TxHeader, TxType, Signer
-from skrecovery import config, sigma
+from skrecovery import config, sigma, database
+from fabric.transaction import Transaction, Endorsement, TxHeader, TxType, Signer
+from fabric.block import Block
 
 msp: MSP = load_MSP()
 
@@ -22,3 +23,9 @@ def post(txType: str, proposal: dict, signature: Signer):
     tx.send_to_ordering_service()
     
     return tx
+
+def find_block_by_transaction_id(tx_id: str) -> Block:
+    block: dict = database.find_block_by_transaction_id(tx_id)
+    if block is None:
+        return None
+    return Block.from_dict(block)

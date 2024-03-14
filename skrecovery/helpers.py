@@ -78,4 +78,8 @@ def get_number(prompt, default):
         except ValueError:
             print("Invalid input. Please enter a number.")
 
-            
+
+def wait(seconds):
+    for i in range(seconds, 0, -1):
+        print(f"\rWaiting {i} seconds...", end='')
+        time.sleep(1)

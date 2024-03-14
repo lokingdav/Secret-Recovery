@@ -92,3 +92,31 @@ def find_block_by_transaction_id(tx_id: str):
         collection = db['ledgers']
         block = collection.find_one({'data._id': tx_id})
     return block
+
+def find_user_by_id(user_id: str):
+    user: dict = None
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['users']
+        user = collection.find_one({'_id': user_id})
+    return user
+
+def insert_user(data: dict):
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['users']
+        collection.insert_one(data)
+        
+def get_server_customer(server_id: str, perm_hash: str):
+    customer: dict = None
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['server_customers']
+        customer = collection.find_one({'server_id': server_id, 'perm_hash': perm_hash})
+    return customer
+
+def insert_server_customer(server_id: str, perm_hash: str):
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['server_customers']
+        collection.insert_one({'server_id': server_id, 'perm_hash': perm_hash})

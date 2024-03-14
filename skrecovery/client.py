@@ -1,51 +1,101 @@
-from . import helpers
-from . import ledger
-from . import sigma
+from . import sigma, database
+from fabric.transaction import TxType, Signer, Transaction
+from fabric import ledger
 
-CLIENTS = "clients"
 
-class client:
-    id: str
-    cid: str
-    perm_info: dict
+class PermInfo:
+    t_open: int = None
+    t_chal: int = None
+    vkc: sigma.PublicKey = None
+    vks: sigma.PublicKey = None
     
-    def __init__(self, id) -> None:
+    def to_dict(self):
+        return {
+            't_open': self.t_open,
+            't_chal': self.t_chal,
+            'vkc': sigma.stringify(self.vkc),
+            'vks': sigma.stringify(self.vks)
+        }
+        
+    @staticmethod
+    def from_dict(data: dict):
+        perm_info = PermInfo()
+        perm_info.t_open = int(data['t_open'])
+        perm_info.t_chal = int(data['t_chal'])
+        perm_info.vkc = sigma.import_pub_key(data['vkc'])
+        perm_info.vks = sigma.import_pub_key(data['vks'])
+        return perm_info
+
+class Client:
+    id: str = None
+    regtx_id: str = None
+    chainid: str = 'skrec'
+    perm_info: PermInfo = None
+    sk: sigma.PrivateKey = None
+    vk: sigma.PublicKey = None
+    
+    def __init__(self, id: int = 0) -> None:
         self.id = f"c{id}"
         
-    def register(self, cid, bid):
-        self.cid = cid
-        self.vk_s = self.get_server_vk(cid, bid)
-        confs = helpers.setup(CLIENTS + ':' + self.id)
-        self.sk_c, self.vk_c, self.t_open, self.t_chal = confs
-        self.perm_info = {
-            'id': self.id, 
-            'type': ledger.Block.TYPE_CLIENT_REG,
-            'vk_c': sigma.stringify(self.vk_c), 
-            't_open': self.t_open, 
-            't_chal': self.t_chal, 
-            'vk_s': self.vk_s
-        } 
-        return ledger.post(data=helpers.stringify(self.perm_info), cid=cid)
+    def register(self, vks: sigma.PublicKey):
+        user: dict = database.find_user_by_id(self.id)
         
-    def get_server_vk(self, cid, bid):
-        reg_block: ledger.Block = ledger.find_block(cid=cid, bid=bid)
-        if not reg_block:
-            raise Exception("Server not found")
-        reg_data = reg_block.parse_data()
-        vk_s = reg_data.get('vk_s')
-        return vk_s
+        if user:
+            self.setData(user)
+            return
+        
+        # Generate keypair
+        sk, vk = sigma.keygen()
+        self.sk, self.vk = sk, vk
+        
+        # Post registration to ledger
+        proposal = {
+            't_open': 5,
+            't_chal': 5,
+            'vkc': sigma.stringify(self.vk),
+            'vks': sigma.stringify(vks)
+        }
+        self.perm_info = PermInfo.from_dict(proposal)
+        creator: Signer = Signer(self.vk, sigma.sign(self.sk, proposal))
+        tx: Transaction = ledger.post(TxType.CLIENT_REGISTER.value, proposal, creator)
+        self.regtx_id = tx.get_id()
+        
+        # Save to database
+        database.insert_user(self.to_dict())
     
-    def verify_registration(self, signature: sigma.G2Element, data: str):
-        return sigma.verify(self.vk_s, data, signature)
+    def verify_server_authorization(self, tx: Transaction):
+        if not isinstance(tx, Transaction):
+            raise ValueError("Invalid transaction")
+        if not isinstance(tx.proposal['authorization'], Signer):
+            raise ValueError("Invalid transaction signer")
+        
+        return tx.proposal['authorization'].verify(self.perm_info.to_dict())
+        
+    def setData(self, data: dict):
+        self.id = data['_id']
+        self.vk = sigma.import_pub_key(data['vk'])
+        self.sk = sigma.import_priv_key(data['sk'])
+        self.regtx_id = data['regtx_id']
+        self.chainid = data['chainid']
+        return self
+        
+    def to_dict(self):
+        return {
+            '_id': self.id,
+            'vk': sigma.stringify(self.vk),
+            'sk': sigma.stringify(self.sk),
+            'regtx_id': self.regtx_id,
+            'chainid': self.chainid,
+            'perm_info': self.perm_info.to_dict()
+        }
     
-    def accept_tx(self, block: ledger.Block, res: str = 'accepted'):
-        tx_data = block.parse_data()
-        tx_data['type'] = ledger.Block.TYPE_RESPONSE
-        tx_data['action'] = res
-        sig = sigma.sign(self.sk_c, helpers.stringify(tx_data))
-        tx_data[f'{res}_sig'] = sigma.stringify(sig)
-        tx_data = helpers.stringify(tx_data)
-        return ledger.post(data=tx_data, cid=block.cid)
-    
-    def deny_tx(self, block: ledger.Block):
-        self.accept_tx(block, 'denied')
+    @staticmethod
+    def from_dict(data: dict):
+        client = Client()
+        client.id = data['_id']
+        client.vk = sigma.import_pub_key(data['vk'])
+        client.sk = sigma.import_priv_key(data['sk'])
+        client.regtx_id = data['regtx_id']
+        client.chainid = data['chainid']
+        client.perm_info = PermInfo.from_dict(data['perm_info'])
+        return client
