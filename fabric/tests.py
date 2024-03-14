@@ -37,4 +37,4 @@ def test_block_serialization():
     
 
 if __name__ == '__main__':
-    test_tx_serialization()
+    test_ledger_post()

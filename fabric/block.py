@@ -8,10 +8,10 @@ class BlockHeader:
     data_hash: str = None
     previous_hash: str = None
     
-    def update_from_last_block(self, header: 'BlockHeader'):
-        if header:
-            self.previous_hash = header.data_hash
-            self.number = header.number + 1
+    def update_from_last_block(self, block: dict):
+        if block and 'header' in block:
+            self.previous_hash = block['header']['data_hash']
+            self.number = int(block['header']['number']) + 1
     
     def to_dict(self):
         return {

@@ -10,7 +10,7 @@ def post_fake_tx():
     vk_str: str = sigma.stringify(vk)
     signature: sigma.Signature = sigma.sign(sk, proposal)
     tx_signature: transaction.Signer = transaction.Signer(vk_str, signature)
-    tx: transaction.Transaction = ledger.post(transaction.TxType.FAKE, proposal, tx_signature)
+    tx: transaction.Transaction = ledger.post(transaction.TxType.FAKE.value, proposal, tx_signature)
     return tx
 
 def worker():

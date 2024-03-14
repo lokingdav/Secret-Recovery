@@ -5,7 +5,6 @@ from fabric.transaction import Transaction, TxHeader, TxType, Signer
 from fabric.block import BlockData, BlockMetaData, BlockHeader, Block
 
 msp: MSP = load_MSP()
-# print(msp.to_dict())
 
 class OSNode:
     index: int
@@ -33,10 +32,13 @@ class OSLeader(OSNode):
         super().__init__(index)
         
     def assemble_transactions(self, pending_txs: list[dict]):
+        # print(f'Assembling {len(pending_txs)} transactions')
         if not pending_txs:
             raise ValueError('No transactions to assemble')
         block: Block = Block()
+        block.data.reset()
         for tx_dict in pending_txs:
+            # print(f'Adding transaction {tx_dict["_id"]} to block')
             block.data.add_tx(tx_dict)
         block.set_data_hash()
         return block
@@ -55,22 +57,26 @@ def begin_consensus(pending_txs: list[dict], leader: OSLeader, followers: list[O
     for follower in followers:
         if not isinstance(follower, OSNode):
             raise ValueError('All followers must be instances of OSNode')
-        
-    # 1. The leader assembles transactions
-    block: Block = leader.assemble_transactions(pending_txs)
-    block: Block = leader.sign_block(block)
     
-    # get random 2F+1 followers
-    verifiers = random.sample(followers, 2 * config.NUM_FAULTS + 1)
-    for follower in verifiers:
-        block = follower.validate(block)
-        block = follower.sign_block(block)
+    try:
+        # 1. The leader assembles transactions
+        block: Block = leader.assemble_transactions(pending_txs)
+        block: Block = leader.sign_block(block)
         
-    # save block to database
-    if save:
-        block.save()
-    
-    return block
+        # get random 2F+1 followers
+        verifiers = random.sample(followers, 2 * config.NUM_FAULTS + 1)
+        for follower in verifiers:
+            block = follower.validate(block)
+            block = follower.sign_block(block)
+            
+        # save block to database
+        if save:
+            block.save()
+        
+        return block
+    except Exception as e:
+        print(f'Error in begin_consensus: {e}')
+        return
        
 def get_orderers():
     leader_index = random.randint(0, len(msp.orderers) - 1)
@@ -87,11 +93,15 @@ def start_ordering_service(args):
     while True:
         start_time = helpers.startStopwatch()
         txs = database.get_pending_txs()
+        # print(f'Found {len(txs)} pending transactions')
         begin_consensus(pending_txs=txs, leader=leader, followers=followers)
         database.delete_pending_txs(txs)
+        # print(f'Deleted {len(txs)} pending transactions')
         elapsed = helpers.stopStopwatch(start_time, secs=True)
         if elapsed < 2:
             time.sleep(2 - elapsed)
+            
+        print(f'Elapsed time: {elapsed} seconds. \nSleep time: {2 - elapsed} seconds. \n')
 
 def initialize_genesis_block_if_missing():
     # check if genesis block exists and return
@@ -116,4 +126,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     initialize_genesis_block_if_missing()
-    # start_ordering_service(args)
+    start_ordering_service(args)
