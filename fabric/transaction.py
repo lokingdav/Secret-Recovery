@@ -33,10 +33,10 @@ class Endorsement:
     response: dict = None
     signature: 'Signer' = None
     
-    def __init__(self, proposal: dict) -> None:
-        if type(proposal) is not dict:
-            raise ValueError('Proposal must be a dictionary')
-        self.response = proposal
+    def __init__(self, data: dict) -> None:
+        if type(data) is not dict:
+            raise ValueError('data must be a dictionary')
+        self.response = data
         
     def sign(self, peer_sk: str, peer_vk: str):
         sig: sigma.Signature = sigma.sign(peer_sk, self.response)
@@ -80,7 +80,7 @@ class Signer:
         )
         
 class Transaction:
-    proposal: dict = None
+    data: dict = None
     response: dict = None
     header: TxHeader = None
     signature: Signer = None
@@ -93,7 +93,7 @@ class Transaction:
         self.endorsements: list[Endorsement] = []
         peers = random.sample(msp.peers, config.NUM_ENDORSEMENTS)
         for keys in peers:
-            endorsement = Endorsement(self.proposal)
+            endorsement = Endorsement(self.data)
             endorsement.sign(keys['sk'], keys['vk'])
             self.endorsements.append(endorsement)
             
@@ -118,7 +118,7 @@ class Transaction:
         return {
             '_id': self.get_id(),
             'header': header,
-            'proposal': self.proposal,
+            'data': self.data,
             'response': self.response,
             'signature': signature,
             'endorsements': endorsements
@@ -128,7 +128,7 @@ class Transaction:
     def from_dict(data: dict) -> 'Transaction':
         instance = Transaction()
         instance.header = TxHeader.from_dict(data['header'])
-        instance.proposal = data['proposal']
+        instance.data = data['data']
         instance.response = data['response']
         instance.signature = Signer.from_dict(data['signature'])
         instance.endorsements = [Endorsement.from_dict(e) for e in data['endorsements']]

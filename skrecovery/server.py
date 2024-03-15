@@ -29,9 +29,9 @@ class Server:
         self.sk, self.vk = sk, vk
         
         # Post registration to ledger
-        proposal = {'action': 'register','vk': sigma.stringify(vk)}
-        creator: Signer = Signer(proposal['vk'], sigma.sign(self.sk, proposal))
-        tx: Transaction = ledger.post(TxType.SERVER_REGISTER.value, proposal, creator)
+        data = {'action': 'register','vk': sigma.stringify(vk)}
+        creator: Signer = Signer(self.vk, sigma.sign(self.sk, data))
+        tx: Transaction = ledger.post(TxType.SERVER_REGISTER.value, data, creator)
         self.regtx_id = tx.get_id()
         
         # Save to database
@@ -52,8 +52,8 @@ class Server:
         database.insert_server_customer(self.id, perm_hash)
         data = {
             'action': TxType.AUTHORIZE_REGISTRATION.value,
-            'perm_info': regtx.proposal,
-            'authorization': Signer(self.vk, sigma.sign(self.sk, regtx.proposal))
+            'perm_info': regtx.data,
+            'authorization': Signer(self.vk, sigma.sign(self.sk, regtx.data))
         }
         creator: Signer = Signer(self.vk, sigma.sign(self.sk, data))
         tx: Transaction = ledger.post(TxType.AUTHORIZE_REGISTRATION.value, data, creator)

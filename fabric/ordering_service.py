@@ -113,10 +113,10 @@ def initialize_genesis_block_if_missing():
     # create transaction for genesis block
     sk, vk = sigma.keygen()
     tx: Transaction = Transaction()
-    tx.proposal = msp.to_dict()
-    tx.response = tx.proposal
+    tx.data = msp.to_dict()
+    tx.response = tx.data
     tx.header = TxHeader(TxType.GENESIS.value)
-    tx.signature = Signer(sigma.stringify(vk), sigma.sign(sk, tx.proposal))
+    tx.signature = Signer(sigma.stringify(vk), sigma.sign(sk, tx.data))
     tx.endorse(msp)
     
     leader, followers = get_orderers()

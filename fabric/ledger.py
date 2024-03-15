@@ -5,17 +5,17 @@ from fabric.transaction import Transaction, TxHeader, Signer
 
 msp: MSP = load_MSP()
 
-def post(txType: str, proposal: dict, signature: Signer):
+def post(txType: str, data: dict, signature: Signer):
     if type(txType) != str:
         raise ValueError('Invalid transaction type')
-    if type(proposal) != dict:
-        raise ValueError('Invalid proposal')
+    if type(data) != dict:
+        raise ValueError('Invalid transaction data')
     if type(signature) != Signer:
         raise ValueError('Invalid signature')
     
     tx = Transaction()
-    tx.proposal = proposal
-    tx.response = proposal
+    tx.data = data
+    tx.response = data
     tx.header = TxHeader(txType)
     tx.signature = signature
     tx.endorse(msp)

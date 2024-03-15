@@ -50,15 +50,15 @@ class Client:
         self.sk, self.vk = sk, vk
         
         # Post registration to ledger
-        proposal = {
+        data = {
             't_open': 5,
             't_chal': 5,
             'vkc': sigma.stringify(self.vk),
             'vks': sigma.stringify(vks)
         }
-        self.perm_info = PermInfo.from_dict(proposal)
-        creator: Signer = Signer(self.vk, sigma.sign(self.sk, proposal))
-        tx: Transaction = ledger.post(TxType.CLIENT_REGISTER.value, proposal, creator)
+        self.perm_info = PermInfo.from_dict(data)
+        creator: Signer = Signer(self.vk, sigma.sign(self.sk, data))
+        tx: Transaction = ledger.post(TxType.CLIENT_REGISTER.value, data, creator)
         self.regtx_id = tx.get_id()
         
         # Save to database
@@ -67,10 +67,13 @@ class Client:
     def verify_server_authorization(self, tx: Transaction):
         if not isinstance(tx, Transaction):
             raise ValueError("Invalid transaction")
-        if not isinstance(tx.proposal['authorization'], Signer):
+        if not isinstance(tx.data['authorization'], Signer):
             raise ValueError("Invalid transaction signer")
         
-        return tx.proposal['authorization'].verify(self.perm_info.to_dict())
+        return tx.data['authorization'].verify(
+            self.perm_info.to_dict(), 
+            self.perm_info.vks
+        )
         
     def setData(self, data: dict):
         self.id = data['_id']

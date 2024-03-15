@@ -8,11 +8,11 @@ num_processes = 4
 
 def post_fake_tx():
     sk, vk = sigma.keygen()
-    proposal: dict = {'fake': base64.b64encode(helpers.random_bytes(256)).decode()}
+    data: dict = {'fake': base64.b64encode(helpers.random_bytes(256)).decode()}
     vk_str: str = sigma.stringify(vk)
-    signature: sigma.Signature = sigma.sign(sk, proposal)
+    signature: sigma.Signature = sigma.sign(sk, data)
     tx_signature: Signer = Signer(vk_str, signature)
-    tx: Transaction = ledger.post(TxType.FAKE.value, proposal, tx_signature)
+    tx: Transaction = ledger.post(TxType.FAKE.value, data, tx_signature)
     return tx
 
 def worker():

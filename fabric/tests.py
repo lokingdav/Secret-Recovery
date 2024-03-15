@@ -6,11 +6,11 @@ from fabric import ledger, transaction
 
 def create_tx():
     sk, vk = sigma.keygen()
-    proposal: dict = {'key': 'hello world!'}
+    data: dict = {'key': 'hello world!'}
     vk_str: str = sigma.stringify(vk)
-    signature: sigma.Signature = sigma.sign(sk, proposal)
+    signature: sigma.Signature = sigma.sign(sk, data)
     tx_signature: transaction.Signer = transaction.Signer(vk_str, signature)
-    tx: transaction.Transaction = ledger.post(transaction.TxType.FAKE.value, proposal, tx_signature)
+    tx: transaction.Transaction = ledger.post(transaction.TxType.FAKE.value, data, tx_signature)
     return tx
 
 def test_ledger_post():
