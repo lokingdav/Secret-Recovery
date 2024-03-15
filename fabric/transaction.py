@@ -1,7 +1,7 @@
 from enum import Enum
 from crypto import sigma
-import datetime, uuid, random, json
-from skrecovery import config, database
+import datetime, uuid, random
+from skrecovery import config, database, helpers
 
 class TxType(Enum):
     FAKE = 'fake'
@@ -109,7 +109,7 @@ class Transaction:
         return self.size_in_bytes()
     
     def to_string(self):
-        return json.dumps(self.to_dict())
+        return helpers.stringify(self.to_dict())
     
     def to_dict(self):
         header = self.header.to_dict()

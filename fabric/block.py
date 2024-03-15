@@ -45,7 +45,7 @@ class BlockData:
         self.transactions = []
         
     def get_hash(self):
-        return helpers.hash256(json.dumps(self.to_dict()))
+        return helpers.hash256(helpers.stringify(self.to_dict()))
     
     def to_dict(self):
         return [tx.to_dict() for tx in self.transactions]

@@ -1,5 +1,5 @@
 import json
-from ..crypto import sigma
+from crypto import sigma
 from fabric import ledger
 from skrecovery.party import Party
 from fabric.transaction import TxType, Signer, Transaction
@@ -37,22 +37,26 @@ class Server(Party):
     def register_client(self, client_regtx_id: str):
         # Find client registration transaction
         block: Block = ledger.find_block_by_transaction_id(client_regtx_id)
+        if not block:
+            raise Exception("Client registration not found")
         regtx: Transaction = block.find_transaction_by_id(client_regtx_id)
+        
         # Check if client is already registered and abort
-        perm_hash: str = helpers.hash256(regtx)
+        perm_hash: str = helpers.hash256(regtx.data)
         is_customer = database.get_server_customer(self.id, perm_hash)
         if is_customer:
             return None
+        
         # Authorize client registration
         database.insert_server_customer(self.id, perm_hash)
         data = {
             'action': TxType.AUTHORIZE_REGISTRATION.value,
             'perm_info': regtx.data,
-            'authorization': Signer(self.vk, sigma.sign(self.sk, regtx.data))
+            'authorization': Signer(self.vk, sigma.sign(self.sk, regtx.data)).to_dict()
         }
         creator: Signer = Signer(self.vk, sigma.sign(self.sk, data))
         tx: Transaction = ledger.post(TxType.AUTHORIZE_REGISTRATION.value, data, creator)
-        self.enclave_register(regtx.data['vkc'])
+        self.enclave_register(perm_hash=perm_hash, vkc=regtx.data['vkc'])
         return tx
     
     def enclave_register(self, perm_hash: str, vkc: str):
@@ -132,7 +136,7 @@ class Server(Party):
         return data['ctx']
     
     def enclave_socket(self, data: dict) -> EnclaveResponse:
-        pass
+        return EnclaveResponse()
     
     def setData(self, data: dict):
         self.id = data['_id']

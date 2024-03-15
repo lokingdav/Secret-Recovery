@@ -1,5 +1,5 @@
-import json
 import secrets
+from skrecovery import helpers
 from blspy import BasicSchemeMPL as sigma, PrivateKey, G1Element as PublicKey, G2Element as Signature
 
 def keygen():
@@ -25,7 +25,7 @@ def stringify(key):
 
 def msg_to_bytes(msg):
     if type(msg) == dict:
-        msg = json.dumps(msg)
+        msg = helpers.stringify(msg)
         
     if type(msg) == str:
         return msg.encode()

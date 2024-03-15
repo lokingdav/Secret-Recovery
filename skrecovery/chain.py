@@ -1,5 +1,5 @@
-from ..crypto import sigma
-from . import helpers
+from crypto import sigma
+from skrecovery import helpers
 import random
 import json
 import os, pickle
@@ -42,18 +42,18 @@ def create_block(prev: str, transactions: list = []):
         data = transactions
         
     data = transactions + [trnx for _ in range(num_trnx)]
-    data = [json.dumps(tx) for tx in data]
+    data = [helpers.stringify(tx) for tx in data]
     # print(data[0])
     sigs = []
     
     for vk in miners:
-        sig = sigma.sign(miners[vk][0], json.dumps(data))
+        sig = sigma.sign(miners[vk][0], helpers.stringify(data))
         sigs.append((sig, miners[vk][1]))
         
     return {
         'data': data, 
         'prev_hash': prev,
-        'hash': helpers.hash256(json.dumps(data) + prev),
+        'hash': helpers.hash256(helpers.stringify(data) + prev),
         'sigs': sigs
     }
 
@@ -68,7 +68,7 @@ def create_window(n):
     return blocks
 
 def validate_block(block):
-    data = json.dumps(block['data'])
+    data = helpers.stringify(block['data'])
     valid_count = 0
 
     for i in range(len(block['sigs'])):

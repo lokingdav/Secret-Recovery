@@ -1,6 +1,6 @@
 import json
 
-from ..crypto import commitment, sigma
+from crypto import commitment, sigma
 from . import ledger, helpers
 from .server import server as Server
 from .client import client as Client

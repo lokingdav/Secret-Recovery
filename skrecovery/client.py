@@ -48,6 +48,7 @@ class Client(Party):
         user: dict = self.load_state()
         if user:
             return
+        
         # Generate keypair
         sk, vk = sigma.keygen()
         self.sk, self.vk = sk, vk
@@ -70,10 +71,13 @@ class Client(Party):
     def verify_server_authorization(self, tx: Transaction):
         if not isinstance(tx, Transaction):
             raise ValueError("Invalid transaction")
-        if not isinstance(tx.data['authorization'], Signer):
+        
+        signer: Signer = Signer.from_dict(tx.data['authorization'])
+        
+        if not isinstance(signer, Signer):
             raise ValueError("Invalid transaction signer")
         
-        return tx.data['authorization'].verify(
+        return signer.verify(
             self.perm_info.to_dict(), 
             self.perm_info.vks
         )
@@ -134,7 +138,9 @@ class Client(Party):
         self.sk = sigma.import_priv_key(data['sk'])
         self.regtx_id = data['regtx_id']
         self.chainid = data['chainid']
-        return self
+        self.perm_info = PermInfo.from_dict(data['perm_info'])
+        self.retK = bytes.fromhex(data['retK']) if data['retK'] else None
+        self.enclave_vk = sigma.import_pub_key(data['enclave_vk']) if data['enclave_vk'] else None
         
     def to_dict(self):
         return {
@@ -143,7 +149,7 @@ class Client(Party):
             'sk': sigma.stringify(self.sk),
             'regtx_id': self.regtx_id,
             'chainid': self.chainid,
-            'perm_info': self.perm_info.to_dict(),
+            'perm_info': self.perm_info.to_dict() if self.perm_info else None,
             'retK': self.retK.hex() if self.retK else None,
             'enclave_vk': sigma.stringify(self.enclave_vk) if self.enclave_vk else None,
         }

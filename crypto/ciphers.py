@@ -1,4 +1,4 @@
-import json
+from skrecovery import helpers
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Random import get_random_bytes
@@ -31,7 +31,7 @@ class RSACtx:
 
 def aes_enc(key: bytes, data: bytes | str) -> AESCtx:
     if type(data) == dict:
-        data = json.dumps(data)
+        data = helpers.stringify(data)
         
     if type(data) == str:
         data = data.encode('utf-8')
