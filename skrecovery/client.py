@@ -1,10 +1,9 @@
 from skrecovery.enclave import EnclaveRes
-from crypto import sigma, ec_group, ciphers
+from crypto import sigma, ec_group, ciphers, commitment
 from fabric import ledger
 from skrecovery import database, helpers
 from skrecovery.party import Party
 from fabric.transaction import TxType, Signer, Transaction
-
 
 class PermInfo:
     t_open: int = None
@@ -156,6 +155,46 @@ class Client(Party):
         self.perm_info = PermInfo.from_dict(data['perm_info'])
         self.retK = bytes.fromhex(data['retK']) if data['retK'] else None
         self.enclave_vk = sigma.import_pub_key(data['enclave_vk']) if data['enclave_vk'] else None
+        
+    def init_recover(self) -> dict:
+        rsakeys: ciphers.RSAKeyPair = ciphers.rsa_keygen()
+        req: dict = {
+            'action': 'recover',
+            'pk': rsakeys.export_pubkey(),
+        }
+        self.generate_permission(req)
+    
+    def generate_permission(self, req: dict):
+        tx_reg: Transaction = ledger.find_transaction_by_id(self.regtx_id)
+        tx_reg = tx_reg.to_dict() if tx_reg else None
+        msg = {'perm_info': self.perm_info.to_dict(), 'req': req,'txc': tx_reg}
+        com, open_secret = commitment.commit(message=msg)
+        
+        # Post the commitment to the ledger
+        data_com: dict = {'com': commitment.export_com(com) }
+        signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data_com))
+        tx_com: Transaction = ledger.post(txType=TxType.COMMITMENT.value, data=data_com, signature=signer)
+        
+        # Post the opening to the ledger
+        data_open: dict = {'open': commitment.export_secret(open_secret)}
+        signer_open = Signer(creator=self.vk, signature=sigma.sign(self.sk, data_open))
+        tx_open: Transaction = ledger.post(txType=TxType.OPENING.value, data=data_open, signature=signer_open)
+        
+        while True:
+            print("Polling for commitment and opening")
+            tx_open: Transaction = ledger.find_transaction_by_id(tx_open.get_id())
+            if tx_open:
+                self.accept_permission(tx_open)
+                break
+            helpers.wait(3)
+        
+    def accept_permission(self, tx_open: Transaction):
+        data: dict = {
+            'action': 'accepted',
+            'tx_open_data': tx_open.data,
+        }
+        granted: sigma.Signature = sigma.sign(self.sk, data)
+        data['granted'] = sigma.stringify(granted)
         
     def to_dict(self):
         return {

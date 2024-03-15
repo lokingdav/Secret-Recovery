@@ -24,6 +24,9 @@ class RSAKeyPair:
         self.priv_key = priv_key
         self.pub_key = pub_key
         
+    def export_pubkey(self) -> bytes:
+        return self.pub_key.export_key()
+        
 class RSACtx:
     def __init__(self, session_ctx: bytes, aes_ctx: AESCtx):
         self.session_ctx = session_ctx

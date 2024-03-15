@@ -117,6 +117,9 @@ class Server(Party):
         data: dict = database.retrieve_ctx(server_id=self.id, perm_hash=perm_hash)
         return data['ctx']
     
+    def process_recover(self, recover_req: dict) -> EnclaveRes:
+        pass
+    
     def enclave_socket(self, req: dict) -> EnclaveRes:
         res: dict = TEE(req)
         return EnclaveRes.deserialize(res)

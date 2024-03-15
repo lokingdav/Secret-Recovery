@@ -1,4 +1,5 @@
 from oblivious.ristretto import point as Point, scalar as Scalar
+from skrecovery import helpers
 
 def commit(message, secret = None):
     secret = Scalar() if secret is None else import_secret(secret)
@@ -35,6 +36,9 @@ def import_secret(secret):
     return Scalar.fromhex(secret)
 
 def to_bytes(message):
+    if isinstance(message, dict):
+        message = helpers.stringify(message)
+    
     if isinstance(message, str):
         return message.encode()
     

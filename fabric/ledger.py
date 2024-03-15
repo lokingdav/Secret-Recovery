@@ -28,3 +28,9 @@ def find_block_by_transaction_id(tx_id: str) -> Block:
     if block is None:
         return None
     return Block.from_dict(block)
+
+def find_transaction_by_id(tx_id: str) -> Transaction:
+    block: Block = find_block_by_transaction_id(tx_id)
+    if block is None:
+        return None
+    return block.find_transaction_by_id(tx_id)
