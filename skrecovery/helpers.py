@@ -12,6 +12,11 @@ def stringify(data):
         return data
     return json.dumps(data, sort_keys=True, separators=(',', ':'))
 
+def parse_json(data):
+    if type(data) == str:
+        return json.loads(data)
+    return data
+
 def startStopwatch():
     return time.perf_counter()
 
@@ -65,3 +70,6 @@ def wait(seconds):
     for i in range(seconds, 0, -1):
         print(f"\rWaiting {i} seconds...", end='')
         time.sleep(1)
+        
+def print_human_readable_json(data: dict):
+    print(json.dumps(data, indent=2, sort_keys=True))

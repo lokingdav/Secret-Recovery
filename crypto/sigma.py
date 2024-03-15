@@ -18,6 +18,9 @@ def verify(pubkey: PublicKey, message, signature: Signature) -> bool:
     return sigma.verify(pubkey, message, signature)
 
 def stringify(key): 
+    if key is None:
+        return None
+    
     if type(key) == str:
         return key
     

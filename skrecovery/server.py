@@ -1,12 +1,12 @@
-import json
 from crypto import sigma
 from fabric import ledger
-from skrecovery.party import Party
-from fabric.transaction import TxType, Signer, Transaction
+from enclave.app import TEE
 from fabric.block import Block
-from skrecovery import helpers, database
+from skrecovery.party import Party
 from skrecovery.client import PermInfo
-from skrecovery.enclave import EnclaveReqType, EnclaveResponse
+from skrecovery import helpers, database
+from skrecovery.enclave import EnclaveReqType, EnclaveRes
+from fabric.transaction import TxType, Signer, Transaction
 
 class Server(Party):
     id: str = None,
@@ -56,47 +56,29 @@ class Server(Party):
         }
         creator: Signer = Signer(self.vk, sigma.sign(self.sk, data))
         tx: Transaction = ledger.post(TxType.AUTHORIZE_REGISTRATION.value, data, creator)
-        self.enclave_register(perm_hash=perm_hash, vkc=regtx.data['vkc'])
         return tx
+
     
-    def enclave_register(self, perm_hash: str, vkc: str):
-        data: dict = {
-            'type': EnclaveReqType.REGISTER.value,
-            'params': {
-                'perm_hash': perm_hash,
-                'vkc': vkc
-            }
-        }
-        res: EnclaveResponse = self.enclave_socket(data)
-        return res
-    
-    def process_store(self, point: str, perm_info: dict, vkclient: str) -> EnclaveResponse:
+    def process_store(self, params: dict) -> EnclaveRes:
         data: dict = {
             'type': EnclaveReqType.STORE.value,
-            'params': {
-                'point': point,
-                'perm_info': perm_info,
-                'vkclient': sigma.stringify(vkclient)
-            }
+            'params': params
         }
-        res: EnclaveResponse = self.enclave_socket(data)
+        res: EnclaveRes = self.enclave_socket(data)
         return res
     
-    def verify_ciphertext(self, perm_info: dict, ctx: str) -> EnclaveResponse:
+    def verify_ciphertext(self, params: dict) -> EnclaveRes:
         data: dict = {
             'type': EnclaveReqType.VERIFY_CIPHERTEXT.value,
-            'params': {
-                'perm_info': perm_info,
-                'ctx': ctx
-            }
+            'params': params
         }
-        res: EnclaveResponse = self.enclave_socket(data)
+        res: EnclaveRes = self.enclave_socket(data)
         if res.is_valid_ctx:
-            perm_hash: str = helpers.hash256(perm_info)
-            database.insert_ctx(self.id, perm_hash, ctx)
+            perm_hash: str = helpers.hash256(params['perm_info'])
+            database.insert_ctx(self.id, perm_hash, params['ctx'])
         return res
     
-    def process_remove(self, remove_req: dict) -> EnclaveResponse:
+    def process_remove(self, remove_req: dict) -> EnclaveRes:
         sig_payload: dict = {
             'action': 'remove',
             'perm_info': remove_req['perm_info']
@@ -112,14 +94,14 @@ class Server(Party):
             'type': EnclaveReqType.REMOVE.value,
             'params': remove_req
         }
-        res: EnclaveResponse = self.enclave_socket(data)
+        res: EnclaveRes = self.enclave_socket(data)
         if res.is_removed:
             perm_hash: str = helpers.hash256(remove_req['perm_info'])
             database.remove_server_customer(self.id, perm_hash)
             database.remove_ctx(self.id, perm_hash)
         return res
     
-    def process_retrieve(self, retrieve_req: dict) -> EnclaveResponse:
+    def process_retrieve(self, retrieve_req: dict) -> EnclaveRes:
         sig_payload: dict = {
             'action': 'remove',
             'perm_info': retrieve_req['perm_info']
@@ -135,8 +117,9 @@ class Server(Party):
         data: dict = database.retrieve_ctx(server_id=self.id, perm_hash=perm_hash)
         return data['ctx']
     
-    def enclave_socket(self, data: dict) -> EnclaveResponse:
-        return EnclaveResponse()
+    def enclave_socket(self, req: dict) -> EnclaveRes:
+        res: dict = TEE(req)
+        return EnclaveRes.deserialize(res)
     
     def setData(self, data: dict):
         self.id = data['_id']

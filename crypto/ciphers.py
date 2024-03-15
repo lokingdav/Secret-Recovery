@@ -10,14 +10,14 @@ class AESCtx:
         self.mac = mac
         
     def to_hex(self) -> str:
-        return self.nonce.hex() + b'.' + self.ctx.hex() + b'|' + self.mac.hex()
+        return self.nonce.hex() + '.' + self.ctx.hex() + '.' + self.mac.hex()
     
     def to_string(self) -> str:
         return self.to_hex()
     
     @staticmethod
     def from_string(data: str) -> 'AESCtx':
-        return AESCtx(*map(bytes.fromhex, data.split(b'.')))
+        return AESCtx(*map(bytes.fromhex, data.split('.')))
         
 class RSAKeyPair:
     def __init__(self, priv_key, pub_key):

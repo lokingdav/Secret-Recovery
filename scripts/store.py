@@ -1,29 +1,28 @@
 from crypto.ciphers import AESCtx
 from skrecovery.client import Client
 from skrecovery.server import Server
-from skrecovery.enclave import EnclaveResponse
+from skrecovery.enclave import EnclaveRes
 from scripts.misc import get_client, get_cloud
+from skrecovery.helpers import print_human_readable_json
 
 def main():
-    secret_info: bytes = b"secret"
-    
+    secret_info: bytes = "Dark matter is a proof of God's existence."
     client: Client = get_client()
     cloud: Server = get_cloud()
     
     # Client part 1: Generate diffie-hellman point
-    A: str = client.initiate_store()
+    params: dict = client.initiate_store()
     
     # Cloud part 1: Forward point to enclave and receive response
-    response: EnclaveResponse = cloud.process_store(A, client.perm_info.to_dict(), client.vk)
+    res: EnclaveRes = cloud.process_store(params)
     
     # Client part 2: Verify response, create shared key and encrypt secret
-    if not response.verify(client.enclave_vk):
-        raise Exception("Invalid response from enclave")
-    client.create_shared_key(response.payload['B'])
-    ctx: AESCtx = client.symmetric_enc(secret_info)
+    client.create_shared_key(res)
+    ctx_params: dict = client.symmetric_enc(secret_info)
     
     # Cloud part 2: Forward ctx to enclave and verify ctx
-    cloud.verify_ciphertext(client.perm_info.to_dict(), ctx.to_string())
+    res: EnclaveRes = cloud.verify_ciphertext(ctx_params)
+    print('res:', res.serialize())
 
 if __name__ == "__main__":
     main()

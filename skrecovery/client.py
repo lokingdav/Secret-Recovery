@@ -1,4 +1,4 @@
-import json
+from skrecovery.enclave import EnclaveRes
 from crypto import sigma, ec_group, ciphers
 from fabric import ledger
 from skrecovery import database
@@ -84,21 +84,31 @@ class Client(Party):
         
     def initiate_store(self) -> str:
         self.discrete_log, point = ec_group.random_DH()
-        return ec_group.export_point(point)
+        return {
+            'point': ec_group.export_point(point),
+            'perm_info': self.perm_info.to_dict(),
+            'vkc': sigma.stringify(self.vk),
+        }
     
-    def create_shared_key(self, B: str):
-        retK = self.discrete_log * ec_group.import_point(B)
+    def create_shared_key(self, res: EnclaveRes):
+        if not res.verify(self.enclave_vk):
+            raise Exception("Invalid response from enclave")
+        retK: ec_group.Point = self.discrete_log * ec_group.import_point(res.payload['t_point'])
         self.retK = bytes(retK)
         
-    def symmetric_enc(self, data: bytes) -> ciphers.AESCtx:
+    def symmetric_enc(self, data: bytes | str) -> dict:
         plaintext = {
-            'data': data,
+            'data': data.decode('utf-8') if isinstance(data, bytes) else data,
             'perm_info': self.perm_info.to_dict(),
             'req': None,
             'res': None,
             'perm': None,
         }
-        return ciphers.aes_enc(self.retK, plaintext)
+        ctx: ciphers.AESCtx = ciphers.aes_enc(self.retK, plaintext)
+        return {
+            'ctx': ctx.to_string(),
+            'perm_info': self.perm_info.to_dict(),
+        }
     
     def init_remove(self) -> dict:
         data = {
