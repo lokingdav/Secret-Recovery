@@ -110,6 +110,24 @@ class Client(Party):
         self.enclave_vk = None
         self.save_state()
         
+    def init_retrieve(self) -> dict:
+        data = {
+            'action': 'retrieve',
+            'perm_info': self.perm_info.to_dict(),
+        }
+        sig: sigma.Signature = sigma.sign(self.sk, data)
+        data['signature'] = sigma.stringify(sig)
+        return data
+    
+    def complete_retrieve(self, ctx: str):
+        ctx: ciphers.AESCtx = ciphers.AESCtx.from_string(ctx)
+        plaintext = ciphers.aes_dec(self.retK, ctx)
+        assert plaintext['perm_info'] == self.perm_info.to_dict()
+        assert plaintext['req'] == None
+        assert plaintext['res'] == None
+        assert plaintext['perm'] == None
+        return plaintext['data']
+        
     def setData(self, data: dict):
         self.id = data['_id']
         self.vk = sigma.import_pub_key(data['vk'])

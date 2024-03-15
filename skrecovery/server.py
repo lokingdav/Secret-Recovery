@@ -115,6 +115,22 @@ class Server(Party):
             database.remove_ctx(self.id, perm_hash)
         return res
     
+    def process_retrieve(self, retrieve_req: dict) -> EnclaveResponse:
+        sig_payload: dict = {
+            'action': 'remove',
+            'perm_info': retrieve_req['perm_info']
+        }
+        
+        if not sigma.verify(
+            retrieve_req['perm_info']['vkc'],
+            sig_payload,
+            signature=retrieve_req['signature']):
+            raise Exception("Invalid signature")
+        
+        perm_hash: str = helpers.hash256(retrieve_req['perm_info'])
+        data: dict = database.retrieve_ctx(server_id=self.id, perm_hash=perm_hash)
+        return data['ctx']
+    
     def enclave_socket(self, data: dict) -> EnclaveResponse:
         pass
     

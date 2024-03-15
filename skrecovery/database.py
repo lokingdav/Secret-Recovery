@@ -145,7 +145,14 @@ def insert_ctx(server_id: str, perm_hash: str, ctx: str):
                 'server_id': server_id,
                 'ctx': ctx
             })
-            
+def retrieve_ctx(server_id: str, perm_hash: str):
+    data: dict = None
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['ciphertexts']
+        data = collection.find_one({'_id': perm_hash, 'server_id': server_id})
+    return data
+
 def remove_ctx(server_id: str, perm_hash: str):
     with open_db() as connection:
         db = connection[config.DB_NAME]

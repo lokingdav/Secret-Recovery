@@ -16,7 +16,7 @@ class AESCtx:
         return self.to_hex()
     
     @staticmethod
-    def from_hex(data: str) -> 'AESCtx':
+    def from_string(data: str) -> 'AESCtx':
         return AESCtx(*map(bytes.fromhex, data.split(b'.')))
         
 class RSAKeyPair:
