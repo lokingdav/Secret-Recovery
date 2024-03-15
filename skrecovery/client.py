@@ -1,4 +1,5 @@
-from . import sigma, database
+from ..crypto import sigma
+from . import database
 from fabric.transaction import TxType, Signer, Transaction
 from fabric import ledger
 

@@ -1,6 +1,6 @@
 from oblivious.ristretto import point as Point, scalar as Scalar
 
-def commit(message, secret = None) -> (Point, Scalar):
+def commit(message, secret = None):
     secret = Scalar() if secret is None else import_secret(secret)
     message = to_bytes(message)
     msg_point: Point = Point.hash(message)

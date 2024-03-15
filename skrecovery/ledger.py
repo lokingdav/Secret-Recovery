@@ -1,5 +1,5 @@
 from . import store
-from . import sigma
+from ..crypto import sigma
 from . import database
 import json
 from .helpers import hash256, stringify

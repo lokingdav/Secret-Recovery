@@ -1,5 +1,5 @@
-import secrets
 import json
+import secrets
 from blspy import BasicSchemeMPL as sigma, PrivateKey, G1Element as PublicKey, G2Element as Signature
 
 def keygen():

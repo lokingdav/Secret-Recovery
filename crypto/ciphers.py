@@ -1,6 +1,6 @@
+from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Random import get_random_bytes
-from Crypto.PublicKey import RSA
 
 def aes_enc(key, data):
     cipher = AES.new(key, AES.MODE_EAX)

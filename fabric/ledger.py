@@ -1,8 +1,7 @@
-import json, random
-from .setup import load_MSP, MSP
-from skrecovery import config, sigma, database
-from fabric.transaction import Transaction, Endorsement, TxHeader, TxType, Signer
 from fabric.block import Block
+from skrecovery import database
+from fabric.setup import load_MSP, MSP
+from fabric.transaction import Transaction, TxHeader, Signer
 
 msp: MSP = load_MSP()
 

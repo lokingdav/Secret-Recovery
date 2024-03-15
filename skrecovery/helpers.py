@@ -2,7 +2,7 @@ import json
 import time
 import hashlib
 import secrets
-from . import sigma
+from ..crypto import sigma
 from . import store
 
 def hash256(data: str):

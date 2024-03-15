@@ -1,4 +1,5 @@
-from skrecovery import enc_dec_scheme, sigma, ec_group, helpers, enclave, chain
+from crypto import ciphers, ec_group, sigma
+from skrecovery import helpers, enclave, chain
 
 enclave.install()
 
@@ -31,7 +32,7 @@ def bench_store():
         sigma.verify(enclave.getpk(), esmsg, sig)
         retK = a * B
         aes_data = perm_info + b'|' + secret
-        aes_ctx = enc_dec_scheme.aes_enc(retK, aes_data)
+        aes_ctx = ciphers.aes_enc(retK, aes_data)
         client_p2_time = helpers.stopStopwatch(client_p2_start)
         
         # cloud part 2
@@ -87,11 +88,11 @@ def bench_retrieved():
         cloud_p1_time = helpers.stopStopwatch(cloud_p1_start)
 
         plaintext = perm_info + b'|' + secret
-        aes_ctx = enc_dec_scheme.aes_enc(cretK, plaintext)
+        aes_ctx = ciphers.aes_enc(cretK, plaintext)
         
         # client part 2
         client_p2_start = helpers.startStopwatch()
-        plaintext_prime = enc_dec_scheme.aes_dec(cretK, aes_ctx)
+        plaintext_prime = ciphers.aes_dec(cretK, aes_ctx)
         client_p2_time = helpers.stopStopwatch(client_p2_start)
         assert plaintext == plaintext_prime
         
@@ -107,7 +108,7 @@ def bench_recover():
     ssig = sigma.sign(ssk, b"recover")
     lsig = sigma.sign(lsk, b"recover")
     cretK = ec_group.point_from_scalar(ec_group.random_scalar())
-    aes_ctx = enc_dec_scheme.aes_enc(cretK, original_secret)
+    aes_ctx = ciphers.aes_enc(cretK, original_secret)
     enclave.set_client_retK(cvk, cretK)
     chain.init()
     
@@ -115,7 +116,7 @@ def bench_recover():
         
         # client part 1
         client_p1_start = helpers.startStopwatch()
-        pubk, privk = enc_dec_scheme.rsa_keygen()
+        pubk, privk = ciphers.rsa_keygen()
         req = b"recover" + b'|' + pubk.export_key()
         client_p1_time = helpers.stopStopwatch(client_p1_start)
         
@@ -163,8 +164,8 @@ def bench_recover():
         
         # client part 2
         client_p2_start = helpers.startStopwatch()
-        assert sigma.verify(enclave.getpk(), enc_dec_scheme.rsa_ctx_to_bytes(rsa_ctx) + b'|' + perm_info, sig_att)
-        mysecret = enc_dec_scheme.rsa_dec(privk, rsa_ctx)
+        assert sigma.verify(enclave.getpk(), ciphers.rsa_ctx_to_bytes(rsa_ctx) + b'|' + perm_info, sig_att)
+        mysecret = ciphers.rsa_dec(privk, rsa_ctx)
         client_p2_time = helpers.stopStopwatch(client_p2_start)
         
         write_to_benchsecrec('client-recover', i, client_p1_time + client_p2_time)

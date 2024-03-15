@@ -1,6 +1,7 @@
 from enum import Enum
-import datetime, uuid, random, json, sys
-from skrecovery import sigma, config, database
+from crypto import sigma
+import datetime, uuid, random, json
+from skrecovery import config, database
 
 class TxType(Enum):
     FAKE = 'fake'

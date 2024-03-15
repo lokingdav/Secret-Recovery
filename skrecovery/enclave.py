@@ -1,4 +1,5 @@
-from . import enc_dec_scheme, enc_dec_scheme, sigma, ec_group, chain
+from ..crypto import ciphers, ec_group, sigma
+from . import chain
 
 msk, mvk = None, None
 retKs = {}
@@ -25,7 +26,7 @@ def store(A, vk_client: str):
 
 def verify_ciphertext(vk_client, perm_info, aes_ctx):
     vk_client = sigma.stringify(vk_client)
-    msg = enc_dec_scheme.aes_dec(retKs[vk_client], aes_ctx)
+    msg = ciphers.aes_dec(retKs[vk_client], aes_ctx)
     perm_info_prime, secret = msg.split(b'|')
     return perm_info_prime == perm_info
 
@@ -76,13 +77,13 @@ def end_recovery():
     assert verify_perm() and rec_req == req_prime
     
     retK = retKs[sigma.stringify(rec_cvk)]
-    plaintext = enc_dec_scheme.aes_dec(retK, rec_aes_ctx)
+    plaintext = ciphers.aes_dec(retK, rec_aes_ctx)
     splited_plaintext = plaintext.split(b'|')
     
     assert splited_plaintext[0] == rec_perm_info
     
-    rsa_ctx = enc_dec_scheme.rsa_enc(pubKey=rec_pubk, data=plaintext)
-    sig = sigma.sign(msk, enc_dec_scheme.rsa_ctx_to_bytes(rsa_ctx) + b'|' + rec_perm_info)
+    rsa_ctx = ciphers.rsa_enc(pubKey=rec_pubk, data=plaintext)
+    sig = sigma.sign(msk, ciphers.rsa_ctx_to_bytes(rsa_ctx) + b'|' + rec_perm_info)
     
     reset_windows()
     

@@ -1,6 +1,5 @@
-import json
-from fabric import transaction
-from skrecovery import sigma, config, database
+from crypto import sigma
+from skrecovery import config, database
 
 filename = 'fabric-keys.json'
 

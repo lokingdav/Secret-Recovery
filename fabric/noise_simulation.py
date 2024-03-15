@@ -1,5 +1,7 @@
-from . import transaction, ledger
-from skrecovery import sigma, helpers
+from crypto import sigma
+from fabric import ledger
+from fabric.transaction import Transaction, TxType, Signer
+from skrecovery import helpers
 import time, random, argparse, multiprocessing, sys, base64
 
 num_processes = 4
@@ -9,15 +11,15 @@ def post_fake_tx():
     proposal: dict = {'fake': base64.b64encode(helpers.random_bytes(256)).decode()}
     vk_str: str = sigma.stringify(vk)
     signature: sigma.Signature = sigma.sign(sk, proposal)
-    tx_signature: transaction.Signer = transaction.Signer(vk_str, signature)
-    tx: transaction.Transaction = ledger.post(transaction.TxType.FAKE.value, proposal, tx_signature)
+    tx_signature: Signer = Signer(vk_str, signature)
+    tx: Transaction = ledger.post(TxType.FAKE.value, proposal, tx_signature)
     return tx
 
 def worker():
     print(f"Starting worker {multiprocessing.current_process().name}")
     try:
         while True:
-            tx: transaction.Transaction = post_fake_tx()
+            tx: Transaction = post_fake_tx()
             sleeptime = random.uniform(0, 1.5)
             time.sleep(sleeptime)
             print(f"Worker {multiprocessing.current_process().name} posted tx {tx.get_id()} and slept for {sleeptime} seconds")

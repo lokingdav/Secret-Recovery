@@ -1,4 +1,5 @@
-from . import helpers, sigma
+from ..crypto import sigma
+from . import helpers
 import random
 import json
 import os, pickle

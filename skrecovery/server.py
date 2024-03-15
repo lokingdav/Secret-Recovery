@@ -1,8 +1,9 @@
 import json
+from ..crypto import sigma
 from fabric import ledger
 from fabric.transaction import TxType, Signer, Transaction
 from fabric.block import Block
-from . import helpers, sigma, store, database
+from . import helpers, store, database
 
 SERVERS = 'servers'
 
