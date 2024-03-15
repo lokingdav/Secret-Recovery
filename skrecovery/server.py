@@ -66,7 +66,7 @@ class Server(Party):
         res: EnclaveResponse = self.enclave_socket(data)
         return res
     
-    def enclave_store(self, point: str, perm_info: dict, vkclient: str) -> EnclaveResponse:
+    def process_store(self, point: str, perm_info: dict, vkclient: str) -> EnclaveResponse:
         data: dict = {
             'type': EnclaveReqType.STORE.value,
             'params': {
@@ -78,7 +78,7 @@ class Server(Party):
         res: EnclaveResponse = self.enclave_socket(data)
         return res
     
-    def enclave_verify_ciphertext(self, perm_info: dict, ctx: str) -> EnclaveResponse:
+    def verify_ciphertext(self, perm_info: dict, ctx: str) -> EnclaveResponse:
         data: dict = {
             'type': EnclaveReqType.VERIFY_CIPHERTEXT.value,
             'params': {
@@ -90,6 +90,29 @@ class Server(Party):
         if res.is_valid_ctx:
             perm_hash: str = helpers.hash256(perm_info)
             database.insert_ctx(self.id, perm_hash, ctx)
+        return res
+    
+    def process_remove(self, remove_req: dict) -> EnclaveResponse:
+        sig_payload: dict = {
+            'action': 'remove',
+            'perm_info': remove_req['perm_info']
+        }
+        
+        if not sigma.verify(
+            remove_req['perm_info']['vkc'],
+            sig_payload,
+            signature=remove_req['signature']):
+            raise Exception("Invalid signature")
+        
+        data: dict = {
+            'type': EnclaveReqType.REMOVE.value,
+            'params': remove_req
+        }
+        res: EnclaveResponse = self.enclave_socket(data)
+        if res.is_removed:
+            perm_hash: str = helpers.hash256(remove_req['perm_info'])
+            database.remove_server_customer(self.id, perm_hash)
+            database.remove_ctx(self.id, perm_hash)
         return res
     
     def enclave_socket(self, data: dict) -> EnclaveResponse:

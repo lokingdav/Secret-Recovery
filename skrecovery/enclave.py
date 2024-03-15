@@ -5,6 +5,7 @@ from fabric.transaction import Signer
 
 class EnclaveReqType(Enum):
     STORE = 'store'
+    REMOVE = 'remove'
     RECOVER = 'recover'
     REGISTER = 'register'
     VERIFY_CIPHERTEXT = 'verify_ciphertext'
@@ -14,6 +15,7 @@ class EnclaveResponse:
     signature: sigma.Signature = None
     payload: dict = None
     is_valid_ctx: bool = False
+    is_removed: bool = False
     
     def verify(self, vk: str | sigma.PublicKey):
         return sigma.verify(vk, self.payload, self.signature)

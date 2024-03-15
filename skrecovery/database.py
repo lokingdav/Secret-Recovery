@@ -121,6 +121,12 @@ def insert_server_customer(server_id: str, perm_hash: str):
         collection = db['server_customers']
         collection.insert_one({'server_id': server_id, 'perm_hash': perm_hash})
         
+def remove_server_customer(server_id: str, perm_hash: str):
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['server_customers']
+        collection.delete_one({'server_id': server_id, 'perm_hash': perm_hash})
+        
         
 def insert_ctx(server_id: str, perm_hash: str, ctx: str):
     with open_db() as connection:
@@ -139,6 +145,12 @@ def insert_ctx(server_id: str, perm_hash: str, ctx: str):
                 'server_id': server_id,
                 'ctx': ctx
             })
+            
+def remove_ctx(server_id: str, perm_hash: str):
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['ciphertexts']
+        collection.delete_one({'_id': perm_hash, 'server_id': server_id})
             
 def update_user(user: dict):
     with open_db() as connection:

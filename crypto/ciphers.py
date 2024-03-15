@@ -1,3 +1,4 @@
+import json
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Random import get_random_bytes
@@ -28,7 +29,10 @@ class RSACtx:
         self.session_ctx = session_ctx
         self.aes_ctx = aes_ctx
 
-def aes_enc(key: bytes, data: bytes) -> AESCtx:
+def aes_enc(key: bytes, data: bytes | str) -> AESCtx:
+    if type(data) == dict:
+        data = json.dumps(data)
+        
     if type(data) == str:
         data = data.encode('utf-8')
         

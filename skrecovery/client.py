@@ -87,14 +87,28 @@ class Client(Party):
         self.retK = bytes(retK)
         
     def symmetric_enc(self, data: bytes) -> ciphers.AESCtx:
-        plaintext = json.dumps({
+        plaintext = {
             'data': data,
             'perm_info': self.perm_info.to_dict(),
             'req': None,
             'res': None,
             'perm': None,
-        })
-        return ciphers.aes_enc(self.retK, data)
+        }
+        return ciphers.aes_enc(self.retK, plaintext)
+    
+    def init_remove(self) -> dict:
+        data = {
+            'action': 'remove',
+            'perm_info': self.perm_info.to_dict(),
+        }
+        sig: sigma.Signature = sigma.sign(self.sk, data)
+        data['signature'] = sigma.stringify(sig)
+        return data
+    
+    def complete_remove(self):
+        self.retK = None
+        self.enclave_vk = None
+        self.save_state()
         
     def setData(self, data: dict):
         self.id = data['_id']

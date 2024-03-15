@@ -14,7 +14,7 @@ def main():
     A: str = client.random_dh_point()
     
     # Cloud part 1: Forward point to enclave and receive response
-    response: EnclaveResponse = cloud.enclave_store(A, client.perm_info.to_dict(), client.vk)
+    response: EnclaveResponse = cloud.process_store(A, client.perm_info.to_dict(), client.vk)
     
     # Client part 2: Verify response, create shared key and encrypt secret
     if not response.verify(client.enclave_vk):
@@ -23,7 +23,7 @@ def main():
     ctx: AESCtx = client.symmetric_enc(secret_info)
     
     # Cloud part 2: Forward ctx to enclave and verify ctx
-    cloud.enclave_verify_ciphertext(client.perm_info.to_dict(), ctx.to_string())
+    cloud.verify_ciphertext(client.perm_info.to_dict(), ctx.to_string())
 
 if __name__ == "__main__":
     main()
