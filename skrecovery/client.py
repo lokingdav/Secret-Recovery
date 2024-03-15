@@ -78,7 +78,7 @@ class Client(Party):
             self.perm_info.vks
         )
         
-    def random_dh_point(self) -> str:
+    def initiate_store(self) -> str:
         self.discrete_log, point = ec_group.random_DH()
         return ec_group.export_point(point)
     

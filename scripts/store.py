@@ -11,7 +11,7 @@ def main():
     cloud: Server = get_cloud()
     
     # Client part 1: Generate diffie-hellman point
-    A: str = client.random_dh_point()
+    A: str = client.initiate_store()
     
     # Cloud part 1: Forward point to enclave and receive response
     response: EnclaveResponse = cloud.process_store(A, client.perm_info.to_dict(), client.vk)
