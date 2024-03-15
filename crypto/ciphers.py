@@ -42,6 +42,11 @@ def aes_enc(key: bytes, data: bytes | str) -> AESCtx:
     return AESCtx(nonce, ctx, mac)
 
 def aes_dec(key: bytes, ctx: AESCtx) -> bytes:
+    if key is None:
+        raise Exception("decryption key must be a valid key")
+    if ctx is None or not isinstance(ctx, AESCtx):
+        raise Exception("ctx must be a valid AESCtx")
+    
     cipher = AES.new(key, AES.MODE_EAX, nonce=ctx.nonce)
     plaintext = cipher.decrypt(ctx.ctx)
     cipher.verify(ctx.mac)

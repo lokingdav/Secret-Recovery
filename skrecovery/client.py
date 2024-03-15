@@ -1,7 +1,7 @@
 from skrecovery.enclave import EnclaveRes
 from crypto import sigma, ec_group, ciphers
 from fabric import ledger
-from skrecovery import database
+from skrecovery import database, helpers
 from skrecovery.party import Party
 from fabric.transaction import TxType, Signer, Transaction
 
@@ -135,7 +135,9 @@ class Client(Party):
     
     def complete_retrieve(self, ctx: str):
         ctx: ciphers.AESCtx = ciphers.AESCtx.from_string(ctx)
-        plaintext = ciphers.aes_dec(self.retK, ctx)
+        plaintext: bytes = ciphers.aes_dec(self.retK, ctx)
+        plaintext: dict = helpers.parse_json(plaintext.decode('utf-8'))
+        
         assert plaintext['perm_info'] == self.perm_info.to_dict()
         assert plaintext['req'] == None
         assert plaintext['res'] == None

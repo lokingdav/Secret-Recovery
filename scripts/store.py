@@ -23,6 +23,8 @@ def main():
     # Cloud part 2: Forward ctx to enclave and verify ctx
     res: EnclaveRes = cloud.verify_ciphertext(ctx_params)
     print('res:', res.serialize())
+    
+    client.save_state()
 
 if __name__ == "__main__":
     main()

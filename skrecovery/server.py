@@ -103,7 +103,7 @@ class Server(Party):
     
     def process_retrieve(self, retrieve_req: dict) -> EnclaveRes:
         sig_payload: dict = {
-            'action': 'remove',
+            'action': 'retrieve',
             'perm_info': retrieve_req['perm_info']
         }
         
