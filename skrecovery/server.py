@@ -1,13 +1,14 @@
 import json
 from ..crypto import sigma
 from fabric import ledger
+from skrecovery.party import Party
 from fabric.transaction import TxType, Signer, Transaction
 from fabric.block import Block
-from . import helpers, store, database
+from skrecovery import helpers, database
+from skrecovery.client import PermInfo
+from skrecovery.enclave import EnclaveReqType, EnclaveResponse
 
-SERVERS = 'servers'
-
-class Server:
+class Server(Party):
     id: str = None,
     regtx_id: str = None
     chainid: str = 'skrec'
@@ -16,24 +17,20 @@ class Server:
     
     def __init__(self, id: int = 0) -> None:
         self.id = f"s{id}"
+        super().__init__()
         
     def register(self):
-        user: dict = database.find_user_by_id(self.id)
-        
+        user: dict = self.load_state()
         if user:
-            self.setData(user)
             return
-        
         # Generate keypair
         sk, vk = sigma.keygen()
         self.sk, self.vk = sk, vk
-        
         # Post registration to ledger
         data = {'action': 'register','vk': sigma.stringify(vk)}
         creator: Signer = Signer(self.vk, sigma.sign(self.sk, data))
         tx: Transaction = ledger.post(TxType.SERVER_REGISTER.value, data, creator)
         self.regtx_id = tx.get_id()
-        
         # Save to database
         database.insert_user(self.to_dict())
         
@@ -41,13 +38,11 @@ class Server:
         # Find client registration transaction
         block: Block = ledger.find_block_by_transaction_id(client_regtx_id)
         regtx: Transaction = block.find_transaction_by_id(client_regtx_id)
-        
         # Check if client is already registered and abort
         perm_hash: str = helpers.hash256(regtx)
         is_customer = database.get_server_customer(self.id, perm_hash)
         if is_customer:
             return None
-        
         # Authorize client registration
         database.insert_server_customer(self.id, perm_hash)
         data = {
@@ -57,7 +52,48 @@ class Server:
         }
         creator: Signer = Signer(self.vk, sigma.sign(self.sk, data))
         tx: Transaction = ledger.post(TxType.AUTHORIZE_REGISTRATION.value, data, creator)
+        self.enclave_register(regtx.data['vkc'])
         return tx
+    
+    def enclave_register(self, perm_hash: str, vkc: str):
+        data: dict = {
+            'type': EnclaveReqType.REGISTER.value,
+            'params': {
+                'perm_hash': perm_hash,
+                'vkc': vkc
+            }
+        }
+        res: EnclaveResponse = self.enclave_socket(data)
+        return res
+    
+    def enclave_store(self, point: str, perm_info: dict, vkclient: str) -> EnclaveResponse:
+        data: dict = {
+            'type': EnclaveReqType.STORE.value,
+            'params': {
+                'point': point,
+                'perm_info': perm_info,
+                'vkclient': sigma.stringify(vkclient)
+            }
+        }
+        res: EnclaveResponse = self.enclave_socket(data)
+        return res
+    
+    def enclave_verify_ciphertext(self, perm_info: dict, ctx: str) -> EnclaveResponse:
+        data: dict = {
+            'type': EnclaveReqType.VERIFY_CIPHERTEXT.value,
+            'params': {
+                'perm_info': perm_info,
+                'ctx': ctx
+            }
+        }
+        res: EnclaveResponse = self.enclave_socket(data)
+        if res.is_valid_ctx:
+            perm_hash: str = helpers.hash256(perm_info)
+            database.insert_ctx(self.id, perm_hash, ctx)
+        return res
+    
+    def enclave_socket(self, data: dict) -> EnclaveResponse:
+        pass
     
     def setData(self, data: dict):
         self.id = data['_id']

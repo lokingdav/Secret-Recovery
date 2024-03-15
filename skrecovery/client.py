@@ -1,7 +1,9 @@
-from ..crypto import sigma
-from . import database
-from fabric.transaction import TxType, Signer, Transaction
+import json
+from crypto import sigma, ec_group, ciphers
 from fabric import ledger
+from skrecovery import database
+from skrecovery.party import Party
+from fabric.transaction import TxType, Signer, Transaction
 
 
 class PermInfo:
@@ -27,24 +29,25 @@ class PermInfo:
         perm_info.vks = sigma.import_pub_key(data['vks'])
         return perm_info
 
-class Client:
+class Client(Party):
     id: str = None
     regtx_id: str = None
     chainid: str = 'skrec'
     perm_info: PermInfo = None
     sk: sigma.PrivateKey = None
     vk: sigma.PublicKey = None
+    discrete_log: ec_group.Scalar = None
+    enclave_vk: sigma.PublicKey = None
+    retK: bytes = None
     
     def __init__(self, id: int = 0) -> None:
         self.id = f"c{id}"
+        super().__init__()
         
     def register(self, vks: sigma.PublicKey):
-        user: dict = database.find_user_by_id(self.id)
-        
+        user: dict = self.load_state()
         if user:
-            self.setData(user)
             return
-        
         # Generate keypair
         sk, vk = sigma.keygen()
         self.sk, self.vk = sk, vk
@@ -75,6 +78,24 @@ class Client:
             self.perm_info.vks
         )
         
+    def random_dh_point(self) -> str:
+        self.discrete_log, point = ec_group.random_DH()
+        return ec_group.export_point(point)
+    
+    def create_shared_key(self, B: str):
+        retK = self.discrete_log * ec_group.import_point(B)
+        self.retK = bytes(retK)
+        
+    def symmetric_enc(self, data: bytes) -> ciphers.AESCtx:
+        plaintext = json.dumps({
+            'data': data,
+            'perm_info': self.perm_info.to_dict(),
+            'req': None,
+            'res': None,
+            'perm': None,
+        })
+        return ciphers.aes_enc(self.retK, data)
+        
     def setData(self, data: dict):
         self.id = data['_id']
         self.vk = sigma.import_pub_key(data['vk'])
@@ -90,8 +111,13 @@ class Client:
             'sk': sigma.stringify(self.sk),
             'regtx_id': self.regtx_id,
             'chainid': self.chainid,
-            'perm_info': self.perm_info.to_dict()
+            'perm_info': self.perm_info.to_dict(),
+            'retK': self.retK.hex() if self.retK else None,
+            'enclave_vk': sigma.stringify(self.enclave_vk) if self.enclave_vk else None,
         }
+        
+    def save_state(self):
+        database.update_user(self.to_dict())
     
     @staticmethod
     def from_dict(data: dict):
@@ -102,4 +128,6 @@ class Client:
         client.regtx_id = data['regtx_id']
         client.chainid = data['chainid']
         client.perm_info = PermInfo.from_dict(data['perm_info'])
+        client.retK = bytes.fromhex(data['retK']) if data['retK'] else None
+        client.enclave_vk = sigma.import_pub_key(data['enclave_vk']) if data['enclave_vk'] else None
         return client

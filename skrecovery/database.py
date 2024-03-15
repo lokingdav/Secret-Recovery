@@ -120,3 +120,28 @@ def insert_server_customer(server_id: str, perm_hash: str):
         db = connection[config.DB_NAME]
         collection = db['server_customers']
         collection.insert_one({'server_id': server_id, 'perm_hash': perm_hash})
+        
+        
+def insert_ctx(server_id: str, perm_hash: str, ctx: str):
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['ciphertexts']
+        # find if ctx already exists
+        existing = collection.find_one({
+            '_id': perm_hash, 
+            'server_id': server_id
+        })
+        if existing:
+            collection.update_one({'_id': perm_hash}, {'$set': {'ctx': ctx}})
+        else:
+            collection.insert_one({
+                '_id': perm_hash,
+                'server_id': server_id,
+                'ctx': ctx
+            })
+            
+def update_user(user: dict):
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['users']
+        collection.update_one({'_id': user['_id']}, {'$set': user})

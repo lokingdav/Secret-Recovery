@@ -1,5 +1,23 @@
 from ..crypto import ciphers, ec_group, sigma
 from . import chain
+from enum import Enum
+from fabric.transaction import Signer
+
+class EnclaveReqType(Enum):
+    STORE = 'store'
+    RECOVER = 'recover'
+    REGISTER = 'register'
+    VERIFY_CIPHERTEXT = 'verify_ciphertext'
+    
+class EnclaveResponse:
+    req_type: EnclaveReqType = None
+    signature: sigma.Signature = None
+    payload: dict = None
+    is_valid_ctx: bool = False
+    
+    def verify(self, vk: str | sigma.PublicKey):
+        return sigma.verify(vk, self.payload, self.signature)
+
 
 msk, mvk = None, None
 retKs = {}
