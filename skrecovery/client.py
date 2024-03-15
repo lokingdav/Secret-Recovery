@@ -170,23 +170,22 @@ class Client(Party):
         msg = {'perm_info': self.perm_info.to_dict(), 'req': req,'txc': tx_reg}
         com, open_secret = commitment.commit(message=msg)
         
-        # Post the commitment to the ledger
-        data_com: dict = {'com': commitment.export_com(com) }
-        signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data_com))
-        tx_com: Transaction = ledger.post(txType=TxType.COMMITMENT.value, data=data_com, signature=signer)
-        
-        # Post the opening to the ledger
-        data_open: dict = {'open': commitment.export_secret(open_secret)}
-        signer_open = Signer(creator=self.vk, signature=sigma.sign(self.sk, data_open))
-        tx_open: Transaction = ledger.post(txType=TxType.OPENING.value, data=data_open, signature=signer_open)
-        
-        while True:
-            print("Polling for commitment and opening")
-            tx_open: Transaction = ledger.find_transaction_by_id(tx_open.get_id())
-            if tx_open:
-                self.accept_permission(tx_open)
-                break
-            helpers.wait(3)
+        tx_com: Transaction = self.post_commitment(com)
+        tx_open: Transaction = self.post_opening(open_secret, msg)
+        self.listen_for_tx_open(tx_open)
+            
+    def post_commitment(self, com: commitment.Point):
+        data: dict = {'com': commitment.export_com(com)}
+        signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data))
+        return ledger.post(TxType.COMMITMENT.value, data, signer)
+    
+    def post_opening(self, open_secret: commitment.Scalar, value: dict):
+        data: dict = {
+            'value': value,
+            'open': commitment.export_secret(open_secret)
+        }
+        signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data))
+        return ledger.post(TxType.OPENING.value, data, signer)
         
     def accept_permission(self, tx_open: Transaction):
         data: dict = {
@@ -195,6 +194,15 @@ class Client(Party):
         }
         granted: sigma.Signature = sigma.sign(self.sk, data)
         data['granted'] = sigma.stringify(granted)
+        
+    def listen_for_tx_open(self, tx_open: Transaction):
+        while True:
+            print("Polling for commitment and opening")
+            tx_open: Transaction = ledger.find_transaction_by_id(tx_open.get_id())
+            if tx_open:
+                self.accept_permission(tx_open)
+                break
+            helpers.wait(3)
         
     def to_dict(self):
         return {
