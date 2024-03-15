@@ -2,6 +2,7 @@ from skrecovery.client import Client
 from skrecovery.server import Server
 from skrecovery.enclave import EnclaveRes
 from scripts.misc import get_client, get_cloud
+from skrecovery.helpers import print_human_readable_json
 
 def main():
     client: Client = get_client()
@@ -11,11 +12,12 @@ def main():
     remove_req: dict = client.init_remove()
     
     # Cloud part 1: Process remove request
-    encl_res: EnclaveRes = cloud.process_remove(remove_req)
+    res: EnclaveRes = cloud.process_remove(remove_req)
     
     # Client part 2: Verify response
-    if encl_res.verify(client.enclave_vk):
-        client.complete_remove()
+    client.complete_remove(res)
+    
+    print_human_readable_json(res.serialize())
 
 if __name__ == "__main__":
     main()

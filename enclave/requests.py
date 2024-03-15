@@ -93,8 +93,32 @@ class RetrieveReq(TEEReq):
         pass
     
 class RemoveReq(TEEReq):
+    perm_info: PermInfo = None
+    signature: sigma.Signature = None
+    
     def __init__(self, req: dict) -> None:
-        pass
+        self.validate_req(req)
+        if req['type'] != EnclaveReqType.REMOVE.value:
+            raise Exception("Invalid request type")
+        
+        self.perm_info = PermInfo.from_dict(req['params']['perm_info'])
+        self.signature = sigma.import_signature(req['params']['signature'])
+        
+    def process_req(self) -> EnclaveRes:
+        sig_payload: dict = {
+            'action': 'remove',
+            'perm_info': self.perm_info.to_dict()
+        }
+        if not sigma.verify(self.perm_info.vkc, sig_payload, self.signature):
+            raise Exception("Invalid client signature for remove request")
+        
+        res: EnclaveRes = EnclaveRes()
+        res.req_type = EnclaveReqType.REMOVE.value
+        res.is_removed = storage.remove_client(sigma.stringify(self.perm_info.vkc))
+        res.payload = {'removed': res.is_removed}
+        
+        # todo: sign the response
+        return res
     
 class RecoverReq(TEEReq):
     def __init__(self, req: dict) -> None:

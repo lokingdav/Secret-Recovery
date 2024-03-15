@@ -119,7 +119,10 @@ class Client(Party):
         data['signature'] = sigma.stringify(sig)
         return data
     
-    def complete_remove(self):
+    def complete_remove(self, res: EnclaveRes):
+        if not res.verify(self.enclave_vk):
+            raise Exception("Invalid response from enclave")
+        
         self.retK = None
         self.enclave_vk = None
         self.save_state()
