@@ -36,7 +36,7 @@ def main():
     print('total duration:', benchmark.total(), 'ms')
     print(benchmark.entries)
     assert math.ceil(benchmark.total()) == expected_duration_in_ms
-    benchmark.to_csv()
+    benchmark.save()
     
     
 if __name__ == '__main__':
