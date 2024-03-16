@@ -4,9 +4,10 @@ from skrecovery import config, database
 filename = 'fabric-keys.json'
 
 class MSP:
-    _id: str = 'fabric-keys'
-    peers: list[dict] = []
-    orderers: list[dict] = []
+    def __init__(self) -> None:
+        self._id: str = 'fabric-keys'
+        self.peers: list[dict] = []
+        self.orderers: list[dict] = []
     
     def save(self):
         database.save_fabric_keys(self.to_dict())

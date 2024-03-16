@@ -27,10 +27,6 @@ class TEEReq:
         pass
 
 class StoreReq(TEEReq):
-    perm_info: PermInfo = None
-    point: ec_group.Point = None
-    vkc: sigma.PublicKey = None
-    
     def __init__(self, req: dict) -> None:
         self.validate_req(req)
         self.perm_info = PermInfo.from_dict(req['params']['perm_info'])
@@ -68,9 +64,6 @@ class StoreReq(TEEReq):
         return res
         
 class VerifyCiphertextReq(TEEReq):
-    perm_info: PermInfo = None
-    ctx: str = None
-    
     def __init__(self, req: dict) -> None:
         self.validate_req(req)
         if req['type'] != EnclaveReqType.VERIFY_CIPHERTEXT.value:
@@ -101,9 +94,6 @@ class RetrieveReq(TEEReq):
         pass
     
 class RemoveReq(TEEReq):
-    perm_info: PermInfo = None
-    signature: sigma.Signature = None
-    
     def __init__(self, req: dict) -> None:
         self.validate_req(req)
         if req['type'] != EnclaveReqType.REMOVE.value:

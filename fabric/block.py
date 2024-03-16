@@ -3,10 +3,11 @@ from fabric.transaction import Transaction, Signer
 from skrecovery import helpers, database, config
 
 class BlockHeader:
-    number: int = 0
-    chainid: str = 'skrec'
-    data_hash: str = None
-    previous_hash: str = None
+    def __init__(self) -> None:
+        self.number: int = 0
+        self.chainid: str = 'skrec'
+        self.data_hash: str = None
+        self.previous_hash: str = None
     
     def update_from_last_block(self, block: dict):
         if block and 'header' in block:
@@ -31,8 +32,6 @@ class BlockHeader:
         return header
         
 class BlockData:
-    transactions: list[Transaction] = []
-    
     def __init__(self, transactions: list[Transaction] = []):
         self.transactions = transactions
         
@@ -56,13 +55,11 @@ class BlockData:
         return BlockData(txs)
     
 class BlockMetaData:
-    bitmap: dict = None
-    creator: Signer = None
-    verifiers: list[Signer] = []
-    last_config_block_number: int = 0
-    
     def __init__(self, bitmap: dict = None, creator: Signer = None):
-        self.bitmap, self.creator = bitmap, creator
+        self.bitmap: dict = bitmap
+        self.creator: Signer = creator
+        self.verifiers: list[Signer] = []
+        self.last_config_block_number: int = 0
         
     def to_dict(self) -> dict:
         creator = self.creator.to_dict() if self.creator else None
@@ -82,10 +79,6 @@ class BlockMetaData:
         return metadata
         
 class Block:
-    header: BlockHeader = None
-    data: BlockData = None
-    metadata: BlockMetaData = None
-    
     def __init__(self, init=True) -> None:
         if init:
             self.header = BlockHeader()
@@ -93,6 +86,10 @@ class Block:
             self.header.update_from_last_block(latest_block)
             self.data = BlockData()
             self.metadata = BlockMetaData()
+        else:
+            self.header: BlockHeader = None
+            self.data: BlockData = None
+            self.metadata: BlockMetaData = None
             
     def get_number(self):
         return self.header.number

@@ -8,10 +8,6 @@ from fabric.transaction import Transaction, TxHeader, TxType, Signer
 msp: MSP = load_MSP()
 
 class OSNode:
-    index: int
-    vk: sigma.PublicKey
-    sk: sigma.PrivateKey
-    
     def __init__(self, index: int) -> None:
         self.index = index
         self.sk = msp.orderers[index]['sk']

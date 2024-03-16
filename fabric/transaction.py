@@ -16,12 +16,9 @@ class TxType(Enum):
     AUTHORIZE_REGISTRATION = 'authorize-registration'
 
 class TxHeader:
-    txid: str = None
-    txtype: str = None
-    
-    def __init__(self, txtype: str) -> None:
+    def __init__(self, txtype: str, txid: str = None) -> None:
         self.txtype = txtype
-        self.txid = uuid.uuid4().hex
+        self.txid = uuid.uuid4().hex if txid is None else txid
     
     def to_dict(self):
         return {'txid': self.txid, 'txtype': self.txtype}
@@ -33,13 +30,11 @@ class TxHeader:
         return instance
     
 class Endorsement:
-    response: dict = None
-    signature: 'Signer' = None
-    
     def __init__(self, data: dict) -> None:
         if type(data) is not dict:
             raise ValueError('data must be a dictionary')
-        self.response = data
+        self.response: dict = data
+        self.signature: Signer = None
         
     def sign(self, peer_sk: str, peer_vk: str):
         sig: sigma.Signature = sigma.sign(peer_sk, self.response)
@@ -58,12 +53,9 @@ class Endorsement:
         return instance
 
 class Signer:
-    creator: str = None
-    signature: sigma.Signature = None
-    
     def __init__(self, creator: str, signature: sigma.Signature) -> None:
-        self.creator = creator if type(creator) is str else sigma.stringify(creator)
-        self.signature = signature
+        self.creator: str = creator if type(creator) is str else sigma.stringify(creator)
+        self.signature: sigma.Signature = signature
         
     def verify(self, data: dict, vk: str = None):
         if vk:
@@ -83,11 +75,12 @@ class Signer:
         )
         
 class Transaction:
-    data: dict = None
-    response: dict = None
-    header: TxHeader = None
-    signature: Signer = None
-    endorsements: list[Endorsement] = None
+    def __init__(self) -> None:
+        self.header: TxHeader = None
+        self.data: dict = None
+        self.response: dict = None
+        self.signature: Signer = None
+        self.endorsements: list[Endorsement] = []
     
     def get_id(self):
         return self.header.txid

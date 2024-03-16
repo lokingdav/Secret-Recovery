@@ -1,13 +1,10 @@
 import json, time, hashlib, secrets
 
 class Benchmark:
-    name: str = None
-    entries: list = []
-    start_time: float = 0
-    filename: str = None
-    
     def __init__(self, name, filename):
         self.name = name
+        self.entries: list = []
+        self.start_time: float = 0
         self.filename = f"benchmarks/{filename}"
         create_csv(self.filename, "test,duration_ms")
 

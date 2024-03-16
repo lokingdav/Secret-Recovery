@@ -4,10 +4,11 @@ from skrecovery import database
 
 
 class Party:
-    id: str = None
-    regtx_id: str = None
-    vk: PublicKey = None
-    sk: PrivateKey = None
+    def __init__(self, id: str) -> None:
+        self.id: str = id
+        self.regtx_id: str = None
+        self.vk: PublicKey = None
+        self.sk: PrivateKey = None
     
     def load_state(self):
         user: dict = database.find_user_by_id(self.id)

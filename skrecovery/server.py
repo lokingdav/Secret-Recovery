@@ -9,15 +9,14 @@ from enclave.requests import EnclaveReqType
 from fabric.transaction import TxType, Signer, Transaction
 
 class Server(Party):
-    id: str = None,
-    regtx_id: str = None
-    chainid: str = 'skrec'
-    sk: sigma.PrivateKey = None
-    vk: sigma.PublicKey = None
-    
     def __init__(self, id: int = 0) -> None:
-        self.id = f"s{id}"
-        super().__init__()
+        id = f"s{id}"
+        super().__init__(id)
+        self.id: str = id
+        self.regtx_id: str = None
+        self.chainid: str = 'skrec'
+        self.sk: sigma.PrivateKey = None
+        self.vk: sigma.PublicKey = None
         
     def register(self):
         user: dict = self.load_state()

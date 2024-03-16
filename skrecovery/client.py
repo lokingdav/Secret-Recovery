@@ -6,10 +6,11 @@ from skrecovery.party import Party
 from fabric.transaction import TxType, Signer, Transaction
 
 class PermInfo:
-    t_open: int = None
-    t_chal: int = None
-    vkc: sigma.PublicKey = None
-    vks: sigma.PublicKey = None
+    def __init__(self) -> None:
+        self.t_open: int = None
+        self.t_chal: int = None
+        self.vkc: sigma.PublicKey = None
+        self.vks: sigma.PublicKey = None
     
     def to_dict(self):
         return {
@@ -29,20 +30,19 @@ class PermInfo:
         return perm_info
 
 class Client(Party):
-    id: str = None
-    regtx_id: str = None
-    chainid: str = 'skrec'
-    perm_info: PermInfo = None
-    sk: sigma.PrivateKey = None
-    vk: sigma.PublicKey = None
-    discrete_log: ec_group.Scalar = None
-    enclave_vk: sigma.PublicKey = None
-    retK: bytes = None
-    rsakeys: ciphers.RSAKeyPair = None
-    
     def __init__(self, id: int = 0) -> None:
-        self.id = f"c{id}"
-        super().__init__()
+        id = f"c{id}"
+        super().__init__(id)
+        self.id = id
+        self.regtx_id: str = None
+        self.chainid: str = 'skrec'
+        self.perm_info: PermInfo = None
+        self.sk: sigma.PrivateKey = None
+        self.vk: sigma.PublicKey = None
+        self.discrete_log: ec_group.Scalar = None
+        self.enclave_vk: sigma.PublicKey = None
+        self.rsakeys: ciphers.RSAKeyPair = None
+        self.retK: bytes = None
         
     def register(self, vks: sigma.PublicKey):
         user: dict = self.load_state()

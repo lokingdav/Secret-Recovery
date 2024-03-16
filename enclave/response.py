@@ -1,12 +1,13 @@
 from crypto import sigma
 
 class EnclaveRes:
-    req_type: str = None
-    payload: dict = None
-    time_taken: float = 0
-    is_removed: bool = False
-    is_valid_ctx: bool = False
-    signature: sigma.Signature = None
+    def __init__(self) -> None:
+        self.req_type = None
+        self.payload = {}
+        self.time_taken = 0
+        self.is_removed = False
+        self.is_valid_ctx = False
+        self.signature = None
     
     def verify(self, vk: str | sigma.PublicKey):
         return True # todo: sigma.verify(vk, self.payload, self.signature)
