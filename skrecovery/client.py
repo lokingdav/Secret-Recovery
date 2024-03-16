@@ -138,7 +138,7 @@ class Client(Party):
         data['signature'] = sigma.stringify(sig)
         return data
     
-    def complete_retrieve(self, ctx: str):
+    def complete_retrieve(self, ctx: str) -> str:
         ctx: ciphers.AESCtx = ciphers.AESCtx.from_string(ctx)
         plaintext: bytes = ciphers.aes_dec(self.retK, ctx)
         plaintext: dict = helpers.parse_json(plaintext.decode('utf-8'))

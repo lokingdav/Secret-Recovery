@@ -2,14 +2,14 @@ from crypto.ciphers import AESCtx
 from skrecovery.client import Client
 from skrecovery.server import Server
 from enclave.response import EnclaveRes
+from skrecovery.helpers import Benchmark
 from scripts.misc import get_client, get_cloud
-from skrecovery.helpers import print_human_readable_json, Benchmark
 
 num_runs = 100
 
 def main():
     test_name = "store"
-    secret_info: bytes = "Dark matter is a proof of God's existence."
+    secret_info: str = "Dark matter is a proof of God's existence."
     client: Client = get_client()
     cloud: Server = get_cloud()
     
