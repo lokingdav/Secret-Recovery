@@ -109,6 +109,9 @@ class Block:
     def save(self):
         database.save_block(self.to_dict())
         
+    def size(self):
+        return len(helpers.stringify(self.to_dict()).encode('utf-8'))
+        
     def verify(self):
         # verify creator signature
         if not self.metadata.creator.verify(self.get_signable_data()):

@@ -1,7 +1,7 @@
 import json
 from crypto import sigma
 from fabric.block import Block
-from skrecovery import database
+from skrecovery import database, helpers
 from fabric import ledger, transaction
 
 def create_tx():
@@ -53,5 +53,12 @@ def verify_blockchain():
         
         
 if __name__ == '__main__':
-    blk = database.find_block_by_transaction_id('d21cf79cdfe54af88779c85d69a6a04e')
-    print(blk)
+    for i in range(0, 50):
+        blk = database.find_block_by_number(22)
+        if blk is None:
+            break
+        
+        block: Block = Block.from_dict(blk)
+        print('===================== BLOCK =====================')
+        print('blk size:', block.size() / 1024, 'KB')
+        print('num txs:', len(block.data.transactions))
