@@ -1,5 +1,46 @@
 import json, time, hashlib, secrets
 
+class Benchmark:
+    name: str = None
+    entries: list = []
+    start_time: float = 0
+    filename: str = None
+    
+    def __init__(self, name, filename):
+        self.name = name
+        self.filename = f"benchmarks/{filename}"
+        create_csv(self.filename, "test,duration_ms")
+
+    def start(self):
+        self.start_time = time.perf_counter()
+        
+    def resume(self):
+        self.start()
+        
+    def pause(self):
+        dur_ms: float = self.get_duration_in_ms()
+        self.entries.append(dur_ms)
+        self.start_time = 0
+        return dur_ms
+
+    def end(self, csv = False):
+        self.pause()
+        if csv:
+            return self.to_csv()
+        return self
+    
+    def to_string(self):
+        return f"{self.name},{self.total()}"
+    
+    def to_csv(self):
+        update_csv(self.filename, self.to_string())
+    
+    def get_duration_in_ms(self) -> float:
+        return (time.perf_counter() - self.start_time) * 1000
+    
+    def total(self) -> float:
+        return sum(self.entries)
+
 def hash256(data: str):
     if type(data) == dict:
         data = stringify(data)
@@ -46,7 +87,7 @@ def random_bytes(n, hex=False):
     return d
 
 def update_csv(file, line, header = None):
-    with open(f'results/{file}', 'a') as f:
+    with open(file, 'a') as f:
         # Write header if file is empty
         if f.tell() == 0 and header:
             f.write(header + '\n')
@@ -54,7 +95,7 @@ def update_csv(file, line, header = None):
         f.write(line + '\n')
         
 def create_csv(file, header, mode = 'a'):
-    with open(f'results/{file}', mode) as f:
+    with open(file, mode) as f:
         if f.tell() == 0:
             f.write(header + '\n')
             

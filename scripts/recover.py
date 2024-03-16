@@ -1,6 +1,6 @@
 from skrecovery.client import Client
 from skrecovery.server import Server
-from skrecovery.enclave import EnclaveRes
+from enclave.response import EnclaveRes
 from scripts.misc import get_client, get_cloud
 from skrecovery.helpers import print_human_readable_json
 

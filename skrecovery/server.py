@@ -3,9 +3,9 @@ from fabric import ledger
 from enclave.app import TEE
 from fabric.block import Block
 from skrecovery.party import Party
-from skrecovery.client import PermInfo
 from skrecovery import helpers, database
-from skrecovery.enclave import EnclaveReqType, EnclaveRes
+from enclave.response import EnclaveRes
+from enclave.requests import EnclaveReqType
 from fabric.transaction import TxType, Signer, Transaction
 
 class Server(Party):
@@ -34,7 +34,7 @@ class Server(Party):
         # Save to database
         database.insert_user(self.to_dict())
         
-    def register_client(self, client_regtx_id: str):
+    def authorize_registration(self, client_regtx_id: str):
         # Find client registration transaction
         block: Block = ledger.find_block_by_transaction_id(client_regtx_id)
         if not block:

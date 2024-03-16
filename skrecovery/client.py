@@ -1,4 +1,4 @@
-from skrecovery.enclave import EnclaveRes
+from enclave.response import EnclaveRes
 from crypto import sigma, ec_group, ciphers, commitment
 from fabric import ledger
 from skrecovery import database, helpers

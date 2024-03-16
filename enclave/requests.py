@@ -1,9 +1,17 @@
 import enclave.storage as storage, json
 from crypto import sigma, ec_group, ciphers
 from skrecovery.client import PermInfo
-from skrecovery.enclave import EnclaveReqType, EnclaveRes
 from skrecovery import helpers
+from enum import Enum
+from enclave.response import EnclaveRes
 
+class EnclaveReqType(Enum):
+    STORE = 'store'
+    REMOVE = 'remove'
+    RECOVER = 'recover'
+    RETRIEVE = 'retrieve'
+    VERIFY_CIPHERTEXT = 'verify_ciphertext'
+    
 class TEEReq:
     def validate_req(self, req: dict):
         if req is None or type(req) is not dict:
