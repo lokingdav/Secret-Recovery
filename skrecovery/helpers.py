@@ -1,12 +1,14 @@
 import json, time, hashlib, secrets
 
 class Benchmark:
-    def __init__(self, name: str, filename: str):
+    def __init__(self, name: str, filename: str = None):
         self.name = name.lower()
         self.entries: list = []
         self.start_time: float = 0
-        self.filename = f"benchmarks/{filename.lower()}.csv"
-        create_csv(self.filename, "test,duration_ms")
+        
+        if filename:
+            self.filename = f"benchmarks/{filename.lower()}.csv"
+            create_csv(self.filename, "test,duration_ms")
 
     def start(self):
         self.start_time = time.perf_counter()
@@ -32,7 +34,8 @@ class Benchmark:
         return f"{self.name},{self.total()}"
     
     def save(self):
-        update_csv(self.filename, self.to_string())
+        if self.filename:
+            update_csv(self.filename, self.to_string())
         return self
     
     def get_duration_in_ms(self) -> float:

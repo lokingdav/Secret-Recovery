@@ -5,10 +5,7 @@ from enclave.response import EnclaveRes
 from skrecovery.helpers import Benchmark
 from scripts.misc import get_client, get_cloud
 
-num_runs = 100
-
-def main():
-    test_name = "store"
+def main(num_runs, test_name):
     secret_info: str = "Dark matter is a proof of God's existence."
     client: Client = get_client()
     cloud: Server = get_cloud()
@@ -52,4 +49,4 @@ def main():
         enclave_bm.save().reset()
 
 if __name__ == "__main__":
-    main()
+    main(num_runs=100, test_name="store")
