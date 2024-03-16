@@ -15,6 +15,7 @@ class Benchmark:
         self.start_time = time.perf_counter()
         
     def resume(self):
+        """Just an alias for start()"""
         self.start()
         
     def pause(self):
@@ -22,12 +23,14 @@ class Benchmark:
         self.entries.append(dur_ms)
         self.start_time = 0
         return dur_ms
+    
+    def add_entry(self, entry: float):
+        if entry > 0:
+            self.entries.append(entry)
 
-    def end(self, csv = False):
+    def end(self):
+        """Just an alias for pause()"""
         self.pause()
-        if csv:
-            return self.to_csv()
-        return self
     
     def to_string(self):
         return f"{self.name},{self.total()}"
@@ -40,6 +43,10 @@ class Benchmark:
     
     def total(self) -> float:
         return sum(self.entries)
+    
+    def reset(self):
+        self.entries = []
+        self.start_time = 0
 
 def hash256(data: str):
     if type(data) == dict:

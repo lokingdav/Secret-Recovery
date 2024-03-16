@@ -1,8 +1,9 @@
-from crypto import ciphers, ec_group, sigma
+from crypto import sigma
 
 class EnclaveRes:
     req_type: str = None
     payload: dict = None
+    time_taken: float = 0
     is_removed: bool = False
     is_valid_ctx: bool = False
     signature: sigma.Signature = None
