@@ -84,11 +84,12 @@ class Client(Party):
         
     def initiate_store(self) -> str:
         self.discrete_log, point = ec_group.random_DH()
-        return {
+        params: dict = {
             'point': ec_group.export_point(point),
             'perm_info': self.perm_info.to_dict(),
             'vkc': sigma.stringify(self.vk),
         }
+        return params
     
     def create_shared_key(self, res: EnclaveRes):
         if not res.verify(self.enclave_vk):

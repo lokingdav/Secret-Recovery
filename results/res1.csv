@@ -1,9 +1,0 @@
-"test_name","runtime_ms_mean","runtime_ms_min","runtime_ms_max","runtime_ms_sd"
-"client-recover",423.939,108.231,1366.855,253.806
-"client-remove",1.798,1.635,2.049,0.071
-"client-retrieved",0.648,0.583,0.741,0.030
-"client-store",2.080,1.689,4.064,0.524
-"cloud-recover",7828.187,7679.189,8087.143,111.726
-"cloud-remove",3.200,2.970,3.545,0.109
-"cloud-retrieved",1.371,1.235,1.553,0.053
-"cloud-store",0.840,0.687,1.433,0.193
