@@ -38,6 +38,7 @@ class Client(Party):
     discrete_log: ec_group.Scalar = None
     enclave_vk: sigma.PublicKey = None
     retK: bytes = None
+    rsakeys: ciphers.RSAKeyPair = None
     
     def __init__(self, id: int = 0) -> None:
         self.id = f"c{id}"
@@ -146,6 +147,57 @@ class Client(Party):
         assert plaintext['perm'] == None
         return plaintext['data']
         
+    def init_recover(self) -> dict:
+        self.rsakeys: ciphers.RSAKeyPair = ciphers.rsa_keygen()
+        req: dict = {
+            'action': 'recover',
+            'pk': self.rsakeys.export_pubkey(),
+        }
+        tx_open: Transaction = self.generate_permission(req)
+        return {'tx_open_id': tx_open.get_id(), 'reg_tx_id': self.regtx_id}
+    
+    def generate_permission(self, req: dict):
+        tx_reg: Transaction = ledger.find_transaction_by_id(self.regtx_id)
+        tx_reg = tx_reg.to_dict() if tx_reg else None
+        msg = {'perm_info': self.perm_info.to_dict(), 'req': req,'txc': tx_reg}
+        com, open_secret = commitment.commit(message=msg)
+        
+        tx_com: Transaction = self.post_commitment(com)
+        
+        ledger.wait_for_tx(tx_com.get_id())
+        tx_open: Transaction = self.post_opening(open_secret, msg)
+        
+        tx_open = ledger.wait_for_tx(tx_open.get_id())
+        self.accept_permission(tx_open)
+        
+        return tx_open
+            
+    def post_commitment(self, com: commitment.Point):
+        data: dict = {'com': commitment.export_com(com)}
+        signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data))
+        return ledger.post(TxType.COMMITMENT.value, data, signer)
+    
+    def post_opening(self, open_secret: commitment.Scalar, message: dict):
+        data: dict = {
+            'message': message,
+            'open': commitment.export_secret(open_secret)
+        }
+        signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data))
+        return ledger.post(TxType.OPENING.value, data, signer)
+            
+    def accept_permission(self, tx_open: Transaction):
+        return self.respond_to_tx_open(tx_open, 'accepted')
+    
+    def respond_to_tx_open(self, tx_open: Transaction, action: str):
+        data: dict = {
+            'action': action,
+            'tx_open_data': tx_open.data,
+        }
+        sig: sigma.Signature = sigma.sign(self.sk, data)
+        data['granted' if action == 'accepted' else 'denied'] = sigma.stringify(sig)
+        signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data))
+        return ledger.post(TxType.PERMISSION.value, data, signer)
+    
     def setData(self, data: dict):
         self.id = data['_id']
         self.vk = sigma.import_pub_key(data['vk'])
@@ -155,54 +207,6 @@ class Client(Party):
         self.perm_info = PermInfo.from_dict(data['perm_info'])
         self.retK = bytes.fromhex(data['retK']) if data['retK'] else None
         self.enclave_vk = sigma.import_pub_key(data['enclave_vk']) if data['enclave_vk'] else None
-        
-    def init_recover(self) -> dict:
-        rsakeys: ciphers.RSAKeyPair = ciphers.rsa_keygen()
-        req: dict = {
-            'action': 'recover',
-            'pk': rsakeys.export_pubkey(),
-        }
-        self.generate_permission(req)
-    
-    def generate_permission(self, req: dict):
-        tx_reg: Transaction = ledger.find_transaction_by_id(self.regtx_id)
-        tx_reg = tx_reg.to_dict() if tx_reg else None
-        msg = {'perm_info': self.perm_info.to_dict(), 'req': req,'txc': tx_reg}
-        com, open_secret = commitment.commit(message=msg)
-        
-        tx_com: Transaction = self.post_commitment(com)
-        tx_open: Transaction = self.post_opening(open_secret, msg)
-        self.listen_for_tx_open(tx_open)
-            
-    def post_commitment(self, com: commitment.Point):
-        data: dict = {'com': commitment.export_com(com)}
-        signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data))
-        return ledger.post(TxType.COMMITMENT.value, data, signer)
-    
-    def post_opening(self, open_secret: commitment.Scalar, value: dict):
-        data: dict = {
-            'value': value,
-            'open': commitment.export_secret(open_secret)
-        }
-        signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data))
-        return ledger.post(TxType.OPENING.value, data, signer)
-        
-    def accept_permission(self, tx_open: Transaction):
-        data: dict = {
-            'action': 'accepted',
-            'tx_open_data': tx_open.data,
-        }
-        granted: sigma.Signature = sigma.sign(self.sk, data)
-        data['granted'] = sigma.stringify(granted)
-        
-    def listen_for_tx_open(self, tx_open: Transaction):
-        while True:
-            print("Polling for commitment and opening")
-            tx_open: Transaction = ledger.find_transaction_by_id(tx_open.get_id())
-            if tx_open:
-                self.accept_permission(tx_open)
-                break
-            helpers.wait(3)
         
     def to_dict(self):
         return {

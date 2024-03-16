@@ -1,5 +1,5 @@
 from fabric.block import Block
-from skrecovery import database
+from skrecovery import database, helpers
 from fabric.setup import load_MSP, MSP
 from fabric.transaction import Transaction, TxHeader, Signer
 
@@ -34,3 +34,15 @@ def find_transaction_by_id(tx_id: str) -> Transaction:
     if block is None:
         return None
     return block.find_transaction_by_id(tx_id)
+
+def wait_for_tx(tx_id: str, seconds:int = 3) -> Transaction: 
+    print(f"Waiting to see transaction {tx_id} on the ledger...")
+    tx: Transaction = find_transaction_by_id(tx_id)
+    while tx is None:
+        helpers.wait(seconds)
+        tx = find_transaction_by_id(tx_id)
+    return tx
+
+def get_blocks_in_range(start_number: int, end_number: int) -> list[Block]:
+    items: list[dict] = database.find_blocks_in_range(start_number, end_number)
+    return [Block.from_dict(item) for item in items]

@@ -164,3 +164,11 @@ def update_user(user: dict):
         db = connection[config.DB_NAME]
         collection = db['users']
         collection.update_one({'_id': user['_id']}, {'$set': user})
+        
+def find_blocks_in_range(start_number: int, end_number: int):
+    blocks: list[dict] = []
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['ledgers']
+        blocks = list(collection.find({'_id': {'$gte': start_number, '$lte': end_number}}))
+    return blocks

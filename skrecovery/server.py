@@ -118,7 +118,32 @@ class Server(Party):
         return data['ctx']
     
     def process_recover(self, recover_req: dict) -> EnclaveRes:
-        pass
+        tx_open: Transaction = ledger.wait_for_tx(recover_req['tx_open_id'])
+        chal_window_c: list[Block] = self.get_chal_window_c(recover_req['reg_tx_id'], tx_open)
+        com_window_req: list[Block] = self.get_com_window_req(tx_open)
+        chal_window_req: list[Block] = self.get_chal_window_req(tx_open)
+    
+    def get_chal_window_c(self, reg_tx_id: str, tx_open: Transaction) -> list[Block]:
+        t_chal: int = tx_open.data['message']['perm_info']['t_chal']
+        block_containing_txc: Block = ledger.find_block_by_transaction_id(reg_tx_id)
+        start = block_containing_txc.get_number() + 1 # Start after the block containing tx_open
+        end = start + t_chal # End at the block containing tx_open + t_chal
+        return ledger.get_blocks_in_range(start_number=start, end_number=end)
+    
+    def get_com_window_req(tx_open: Transaction) -> list[Block]:
+        t_open: int = tx_open.data['message']['perm_info']['t_open']
+        block_containing_tx_open: Block = ledger.find_block_by_transaction_id(tx_open.get_id())
+        start = block_containing_tx_open.get_number() - t_open # t_open blocks before the block containing tx_open
+        end = block_containing_tx_open.get_number() + t_open # t_open blocks after tx_open
+        # todo: adjust value of end variable (needs info from Tanner)
+        return ledger.get_blocks_in_range(start_number=start, end_number=end)
+    
+    def get_chal_window_req(tx_open: Transaction) -> list[Block]:
+        t_chal: int = tx_open.data['message']['perm_info']['t_chal']
+        block_containing_tx_open: Block = ledger.find_block_by_transaction_id(tx_open.get_id())
+        start = block_containing_tx_open.get_number() # Start at the block containing tx_open
+        end = start + t_chal # t_chal blocks after tx_open
+        return ledger.get_blocks_in_range(start_number=start, end_number=end)
     
     def enclave_socket(self, req: dict) -> EnclaveRes:
         res: dict = TEE(req)

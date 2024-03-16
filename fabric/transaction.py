@@ -10,6 +10,7 @@ class TxType(Enum):
     OPENING = 'opening'
     RESPONSE = 'response'
     COMMITMENT = 'commitment'
+    PERMISSION = 'permission'
     SERVER_REGISTER = 'server-register'
     CLIENT_REGISTER = 'client-register'
     AUTHORIZE_REGISTRATION = 'authorize-registration'
@@ -103,6 +104,9 @@ class Transaction:
         data = self.to_dict()
         data['created_at'] = datetime.datetime.now()
         database.insert_pending_txs(records=[data])
+        
+    def get_block(self):
+        return database.find_block_by_transaction_id(self.get_id())
     
     def size_in_bytes(self):
         return len(self.to_string().encode())

@@ -93,6 +93,9 @@ class Block:
             self.header.update_from_last_block(latest_block)
             self.data = BlockData()
             self.metadata = BlockMetaData()
+            
+    def get_number(self):
+        return self.header.number
         
     def set_data_hash(self):
         self.header.data_hash = self.data.get_hash()
