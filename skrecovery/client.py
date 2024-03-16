@@ -69,6 +69,7 @@ class Client(Party):
         database.insert_user(self.to_dict())
     
     def verify_server_authorization(self, tx: Transaction):
+        print(tx)
         if not isinstance(tx, Transaction):
             raise ValueError("Invalid transaction")
         

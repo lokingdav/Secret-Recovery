@@ -17,7 +17,8 @@ def main():
     
     ledger.wait_for_tx(client.regtx_id) # Wait for client registration to be processed
     authorization_tx: Transaction = server.authorize_registration(client.regtx_id)
-    client.verify_server_authorization(authorization_tx)
+    if authorization_tx: # verify if new client
+        client.verify_server_authorization(authorization_tx)
 
 if __name__ == "__main__":
     main()
