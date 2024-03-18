@@ -5,7 +5,7 @@ from enclave.response import EnclaveRes
 from skrecovery.helpers import Benchmark
 from scripts.misc import get_client, get_cloud
 
-def main(num_runs, test_name):
+def main(num_runs, test_name = None):
     secret_info: str = "Dark matter is a proof of God's existence."
     client: Client = get_client()
     cloud: Server = get_cloud()

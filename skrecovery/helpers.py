@@ -5,6 +5,7 @@ class Benchmark:
         self.name = name.lower()
         self.entries: list = []
         self.start_time: float = 0
+        self.filename: str = None
         
         if filename:
             self.filename = f"benchmarks/{filename.lower()}.csv"
