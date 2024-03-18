@@ -15,12 +15,12 @@ def main(num_runs, test_name):
     
     for i in range(num_runs):
         # Client part 1: Initiate retrieve request
-        client_bm.start()
+        client_bm.reset().start()
         retrieve_req: dict = client.init_retrieve()
         client_bm.pause()
         
         # Cloud part 1: Process retrieve request
-        cloud_bm.start()
+        cloud_bm.reset().start()
         ctx: str = cloud.process_retrieve(retrieve_req)
         cloud_bm.end()
         
@@ -32,7 +32,7 @@ def main(num_runs, test_name):
         assert plaintext == secret_info
         
         print(f'\nBenchmarks for run {i+1}')
-        print('client:', client_bm.entries, cloud_bm.total())
+        print('client:', client_bm.entries, client_bm.total())
         print('cloud:', cloud_bm.entries, cloud_bm.total())
         
         client_bm.save().reset()

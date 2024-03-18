@@ -16,12 +16,12 @@ def main(num_runs, test_name = None):
     
     for i in range(num_runs):
         # Client part 1: Generate diffie-hellman point
-        client_bm.start()
+        client_bm.reset().start()
         params: dict = client.initiate_store()
         client_bm.pause()
         
         # Cloud part 1: Forward point to enclave and receive response
-        cloud_bm.start()
+        cloud_bm.reset().start()
         res: EnclaveRes = cloud.process_store(params)
         enclave_bm.add_entry(res.time_taken)
         cloud_bm.pause()
@@ -39,10 +39,11 @@ def main(num_runs, test_name = None):
         cloud_bm.end()
         client.save_state()
         
-        print(f'\nBenchmarks for run {i+1}')
-        print('client:', client_bm.entries, cloud_bm.total())
-        print('cloud:', cloud_bm.entries, cloud_bm.total())
-        print('enclave:', enclave_bm.entries)
+        if test_name:
+            print(f'\nBenchmarks for run {i+1}')
+            print('client:', client_bm.entries, client_bm.total())
+            print('cloud:', cloud_bm.entries, cloud_bm.total())
+            print('enclave:', enclave_bm.entries, enclave_bm.total())
         
         client_bm.save().reset()
         cloud_bm.save().reset()

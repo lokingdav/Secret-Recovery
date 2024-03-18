@@ -30,6 +30,7 @@ class Benchmark:
     def end(self):
         """Just an alias for pause()"""
         self.pause()
+        return self
     
     def to_string(self):
         return f"{self.name},{self.total()}"
@@ -42,12 +43,14 @@ class Benchmark:
     def get_duration_in_ms(self) -> float:
         return (time.perf_counter() - self.start_time) * 1000
     
-    def total(self) -> float:
-        return round(sum(self.entries), 3)
+    def total(self, short=True) -> float:
+        total = sum(self.entries)
+        return round(total, 3) if short else total
     
     def reset(self):
         self.entries = []
         self.start_time = 0
+        return self
 
 def hash256(data: str):
     if type(data) == dict:

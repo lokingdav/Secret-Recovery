@@ -32,6 +32,7 @@ class StoreReq(TEEReq):
         self.perm_info = PermInfo.from_dict(req['params']['perm_info'])
         self.point = ec_group.import_point(req['params']['point'])
         self.vkc = sigma.import_pub_key(req['params']['vkc'])
+        self.benchmark = helpers.Benchmark(name="store", filename=None)
         
     def validate_req(self, req: dict):
         super().validate_req(req)
@@ -47,6 +48,7 @@ class StoreReq(TEEReq):
             raise Exception("Invalid request parameters: vkc")
         
     def process_req(self) -> EnclaveRes:
+        self.benchmark.reset().start()
         vk: str = sigma.stringify(self.vkc)
         discrete_log, point2 = ec_group.random_DH()
         retK: ec_group.Point = discrete_log * self.point
@@ -59,8 +61,8 @@ class StoreReq(TEEReq):
             't_point': ec_group.export_point(point2),
             'vkc': vk
         }
-        
         # todo: sign the response
+        res.time_taken = self.benchmark.end().total(short=False)
         return res
         
 class VerifyCiphertextReq(TEEReq):
@@ -70,8 +72,10 @@ class VerifyCiphertextReq(TEEReq):
             raise Exception("Invalid request type")
         self.perm_info = PermInfo.from_dict(req['params']['perm_info'])
         self.ctx = req['params']['ctx']
+        self.benchmark = helpers.Benchmark(name="verifyciphertext", filename=None)
         
     def process_req(self) -> EnclaveRes:
+        self.benchmark.reset().start()
         vkc: str = sigma.stringify(self.perm_info.vkc)
         ctx: ciphers.AESCtx = ciphers.AESCtx.from_string(self.ctx)
         retK: ec_group.Point = storage.get_retK(vkc)
@@ -85,8 +89,9 @@ class VerifyCiphertextReq(TEEReq):
         res.req_type = EnclaveReqType.VERIFY_CIPHERTEXT.value
         res.is_valid_ctx = valid_perm_info and valid_req_perm
         res.payload = {'stored': res.is_valid_ctx}
-        
         # todo: sign the response
+        
+        res.time_taken = self.benchmark.end().total(short=False)
         return res
     
 class RetrieveReq(TEEReq):
@@ -101,8 +106,10 @@ class RemoveReq(TEEReq):
         
         self.perm_info = PermInfo.from_dict(req['params']['perm_info'])
         self.signature = sigma.import_signature(req['params']['signature'])
+        self.benchmark = helpers.Benchmark(name="remove", filename=None)
         
     def process_req(self) -> EnclaveRes:
+        self.benchmark.reset().start()
         sig_payload: dict = {
             'action': 'remove',
             'perm_info': self.perm_info.to_dict()
@@ -114,10 +121,16 @@ class RemoveReq(TEEReq):
         res.req_type = EnclaveReqType.REMOVE.value
         res.is_removed = storage.remove_client(sigma.stringify(self.perm_info.vkc))
         res.payload = {'removed': res.is_removed}
-        
         # todo: sign the response
+        res.time_taken = self.benchmark.end().total(short=False)
         return res
     
 class RecoverReq(TEEReq):
     def __init__(self, req: dict) -> None:
-        pass
+        self.benchmark = helpers.Benchmark(name="recover", filename=None)
+        
+    def process_req(self) -> EnclaveRes:
+        self.benchmark.reset().start()
+        res: EnclaveRes = EnclaveRes()
+        res.req_type = EnclaveReqType.RECOVER.value
+        res.time_taken = self.benchmark.end().total(short=False)

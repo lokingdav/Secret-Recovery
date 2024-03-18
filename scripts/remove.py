@@ -18,12 +18,12 @@ def main(num_runs, test_name):
         store_script(num_runs=1)
         
         # Client part 1: Initiate remove request
-        client_bm.start()
+        client_bm.reset().start()
         remove_req: dict = client.init_remove()
         client_bm.pause()
         
         # Cloud part 1: Process remove request
-        cloud_bm.start()
+        cloud_bm.reset().start()
         res: EnclaveRes = cloud.process_remove(remove_req)
         enclave_bm.add_entry(res.time_taken)
         cloud_bm.end()
@@ -34,7 +34,7 @@ def main(num_runs, test_name):
         client_bm.end()
         
         print(f'\nBenchmarks for run {i+1}')
-        print('client:', client_bm.entries, cloud_bm.total())
+        print('client:', client_bm.entries, client_bm.total())
         print('cloud:', cloud_bm.entries, cloud_bm.total())
         print('enclave:', enclave_bm.entries, enclave_bm.total())
         
