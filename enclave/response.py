@@ -8,6 +8,8 @@ class EnclaveRes:
         self.is_removed = False
         self.is_valid_ctx = False
         self.signature = None
+        self.error = None
+        self.ctx_fin = None
     
     def verify(self, vk: str | sigma.PublicKey):
         return True # todo: sigma.verify(vk, self.payload, self.signature)
@@ -19,7 +21,8 @@ class EnclaveRes:
             'payload': self.payload,
             'is_valid_ctx': self.is_valid_ctx,
             'is_removed': self.is_removed,
-            'time_taken': self.time_taken
+            'time_taken': self.time_taken,
+            'error': self.error
         }
         
     def sign(self, sk: str | sigma.PrivateKey):
@@ -34,4 +37,5 @@ class EnclaveRes:
         res.is_valid_ctx = bool(data['is_valid_ctx'])
         res.signature = sigma.import_signature(data['signature']) if data['signature'] is not None else None
         res.time_taken = data['time_taken']
+        res.error = data['error']
         return res

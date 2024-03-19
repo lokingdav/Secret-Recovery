@@ -26,11 +26,6 @@ class RSAKeyPair:
         
     def export_pubkey(self) -> bytes:
         return self.pub_key.export_key()
-        
-class RSACtx:
-    def __init__(self, session_ctx: bytes, aes_ctx: AESCtx):
-        self.session_ctx = session_ctx
-        self.aes_ctx = aes_ctx
 
 def aes_enc(key: bytes, data: bytes | str) -> AESCtx:
     if type(data) == dict:
@@ -55,6 +50,22 @@ def aes_dec(key: bytes, ctx: AESCtx) -> bytes:
     cipher.verify(ctx.mac)
     
     return plaintext
+
+class RSACtx:
+    def __init__(self, session_ctx: bytes, aes_ctx: AESCtx):
+        self.session_ctx = session_ctx
+        self.aes_ctx = aes_ctx
+        
+    def to_hex(self) -> str:
+        return self.session_ctx.hex() + '|' + self.aes_ctx.to_string()
+    
+    def to_string(self) -> str:
+        return self.to_hex()
+    
+    @staticmethod
+    def from_string(data: str) -> 'AESCtx':
+        ss, aesctx = data.split('|')
+        return RSACtx(bytes.fromhex(ss), AESCtx.from_string(aesctx))
 
 def rsa_keygen() -> RSAKeyPair:
     privKey = RSA.generate(2048)

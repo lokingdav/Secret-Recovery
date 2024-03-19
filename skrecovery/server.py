@@ -1,9 +1,9 @@
-from crypto import sigma
-from fabric import ledger
+from crypto import sigma, commitment
+from fabric import ledger, window
 from enclave.app import TEE
 from fabric.block import Block
 from skrecovery.party import Party
-from skrecovery import helpers, database
+from skrecovery import helpers, database, config
 from enclave.response import EnclaveRes
 from enclave.requests import EnclaveReqType
 from fabric.transaction import TxType, Signer, Transaction
@@ -118,9 +118,107 @@ class Server(Party):
     
     def process_recover(self, recover_req: dict) -> EnclaveRes:
         tx_open: Transaction = ledger.wait_for_tx(recover_req['tx_open_id'])
+        
         chal_window_c: list[Block] = self.get_chal_window_c(recover_req['reg_tx_id'], tx_open)
+        chal_window_c = self.verify_registration_tx(chal_window_c)
+        
         com_window_req: list[Block] = self.get_com_window_req(tx_open)
+        if not self.verify_commitment_tx(tx_open=tx_open, com_window_req=com_window_req):
+            raise Exception("Invalid commitment")
+        
         chal_window_req: list[Block] = self.get_chal_window_req(tx_open)
+        if not self.verify_permission_request(
+            tx_open=tx_open,
+            chal_window_req=chal_window_req,
+            com_window_req=com_window_req
+        ):
+            raise Exception("Invalid permission request")
+        
+        # sign permission
+        client_regtx: Transaction = ledger.find_transaction_by_id(recover_req['reg_tx_id'])
+        perm = {
+            'server_regtx': self.get_regtx().to_dict(),
+            'client_regtx': client_regtx.to_dict(),
+            'chal_window_c': [block.to_dict() for block in chal_window_c],
+            'com_window_req': [block.to_dict() for block in com_window_req],
+            'chal_window_req': [block.to_dict() for block in chal_window_req],
+            'open': tx_open.data
+        }
+        
+        # Post to ledger
+        data = {
+            'action': 'permission',
+            'client_regtx': recover_req['reg_tx_id'],
+            'chal_window_c': {
+                'start': chal_window_c[0].get_number(),
+                'end': chal_window_c[-1].get_number()
+            },
+            'com_window_req': {
+                'start': com_window_req[0].get_number(),
+                'end': com_window_req[-1].get_number()
+            },
+            'chal_window_req': {
+                'start': chal_window_req[0].get_number(),
+                'end': chal_window_req[-1].get_number()
+            },
+        }
+        creator: Signer = Signer(self.vk, sigma.sign(self.sk, data))
+        ledger.post(TxType.PERMISSION.value, data, creator)
+        
+        enclave_req: dict = {
+            'type': EnclaveReqType.RECOVER.value,
+            'params': {
+                'perm': perm,
+                'req': tx_open.data['message']['req']
+            }
+        }
+        return self.enclave_socket(enclave_req)
+        
+    def verify_registration_tx(self, chal_window_c: list[Block]) -> list[Block]:
+        return chal_window_c # optional implementation
+    
+    def verify_commitment_tx(self, tx_open: Transaction, com_window_req: list[Block]) -> bool:
+        block_com, tx_com = window.find_commitment_for_opening(
+            window=com_window_req,
+            tx_open=tx_open
+        )
+        if not block_com or not tx_com:
+            return False
+        return commitment.open_com(
+            com=tx_com.data['com'],
+            msg=tx_open.data['message'],
+            sec=tx_open.data['opening']
+        )
+            
+    def verify_permission_request(self, tx_open: Transaction, com_window_req: list[Block], chal_window_req: list[Block]) -> list[Block]:
+        blocks: list[tuple[Block, Transaction]] = window.find_other_openings(
+            window=chal_window_req,
+            perm_info=tx_open.data['message']['perm_info'],
+            exclude=tx_open.get_id()
+        )
+        
+        if not blocks:
+            return True
+        
+        for block, tx_open_prime in blocks:
+            block_com, tx_com = window.find_commitment_for_opening(
+                window=com_window_req,
+                tx_open=tx_open_prime
+            )
+            if not block_com:
+                continue
+            is_valid_opening = commitment.open_com(
+                com=tx_com.data['com'],
+                msg=tx_open_prime.data['message'],
+                sec=tx_open_prime.data['opening']
+            )
+            
+            distance = block.get_number() - block_com.get_number()
+            
+            if is_valid_opening and distance <= tx_open.data['message']['perm_info']['t_open']:
+                return False
+        
+        return True
     
     def get_chal_window_c(self, reg_tx_id: str, tx_open: Transaction) -> list[Block]:
         t_chal: int = tx_open.data['message']['perm_info']['t_chal']
@@ -133,8 +231,7 @@ class Server(Party):
         t_open: int = tx_open.data['message']['perm_info']['t_open']
         block_containing_tx_open: Block = ledger.find_block_by_transaction_id(tx_open.get_id())
         start = block_containing_tx_open.get_number() - t_open # t_open blocks before the block containing tx_open
-        end = block_containing_tx_open.get_number() + t_open # t_open blocks after tx_open
-        # todo: adjust value of end variable (needs info from Tanner)
+        end = block_containing_tx_open.get_number() + config.T_OPEN_BUFFER # buffer blocks after tx_open
         return ledger.get_blocks_in_range(start_number=start, end_number=end)
     
     def get_chal_window_req(tx_open: Transaction) -> list[Block]:

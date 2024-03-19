@@ -1,6 +1,7 @@
 from crypto.sigma import PrivateKey, PublicKey
 from fabric import ledger
 from skrecovery import database
+from fabric.transaction import Transaction
 
 
 class Party:
@@ -22,3 +23,6 @@ class Party:
     
     def setData(self, data: dict):
         pass
+    
+    def get_regtx(self) -> Transaction:
+        return ledger.find_transaction_by_id(self.regtx_id)

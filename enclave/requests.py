@@ -128,9 +128,50 @@ class RemoveReq(TEEReq):
 class RecoverReq(TEEReq):
     def __init__(self, req: dict) -> None:
         self.benchmark = helpers.Benchmark(name="recover", filename=None)
+        self.validate_req(req)
+        if req['type'] != EnclaveReqType.RECOVER.value:
+            raise Exception("Invalid request type")
+        
+        self.pk = ec_group.import_point(req['params']['pk'])
+        self.ctx = req['params']['ctx']
+        self.req = req['params']['req']
+        self.perm = req['params']['perm']
+        self.perm_info = PermInfo.from_dict(req['params']['perm']['open']['perm_info'])
+        self.retK = storage.get_retK(sigma.stringify(self.perm_info.vkc))
         
     def process_req(self) -> EnclaveRes:
         self.benchmark.reset().start()
         res: EnclaveRes = EnclaveRes()
         res.req_type = EnclaveReqType.RECOVER.value
+        
+        try:
+            req: dict = { 'action': 'recover', 'pk': self.pk}
+            valid_req: bool = helpers.stringify(req) == helpers.stringify(self.req)
+            if self.verify_perm() is False or valid_req is False:
+                raise Exception("Invalid permissions")
+            
+            ctx: ciphers.AESCtx = ciphers.AESCtx.from_string(self.ctx)
+            plaintext: bytes = ciphers.aes_dec(self.retK, ctx)
+            plaintext: dict = helpers.parse_json(plaintext.decode('utf-8'))
+            
+            perm_info_matched: bool = helpers.stringify(plaintext['perm_info']) == helpers.stringify(self.perm_info.to_dict())
+            other_check: bool = plaintext['req'] is None and plaintext['res'] is None and plaintext['perm'] is None
+            if not perm_info_matched or not other_check:
+                raise Exception("Invalid permissions")
+            
+            data: dict = {
+                'data': plaintext['data'].decode('utf-8') if isinstance(plaintext['data'], bytes) else plaintext['data'],
+                'perm_info': self.perm_info.to_dict(),
+                'req': self.req,
+                'perm': self.perm,
+            }
+            ctx: ciphers.RSACtx = ciphers.rsa_enc(self.pk, data=data)
+            res.ctx_fin = ctx.to_string()
+        except Exception as e:
+            res.error = str(e)
+            
         res.time_taken = self.benchmark.end().total(short=False)
+        return res
+        
+    def verify_perm(self) -> bool:
+        pass

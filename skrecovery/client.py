@@ -149,16 +149,16 @@ class Client(Party):
         assert plaintext['perm'] == None
         return plaintext['data']
         
-    def init_recover(self) -> dict:
+    def init_recover(self, z_cmd: str = None) -> dict:
         self.rsakeys: ciphers.RSAKeyPair = ciphers.rsa_keygen()
         req: dict = {
             'action': 'recover',
             'pk': self.rsakeys.export_pubkey(),
         }
-        tx_open: Transaction = self.generate_permission(req)
+        tx_open: Transaction = self.generate_permission(req, z_cmd)
         return {'tx_open_id': tx_open.get_id(), 'reg_tx_id': self.regtx_id}
     
-    def generate_permission(self, req: dict):
+    def generate_permission(self, req: dict, z_cmd: str = None) -> Transaction:
         tx_reg: Transaction = ledger.find_transaction_by_id(self.regtx_id)
         tx_reg = tx_reg.to_dict() if tx_reg else None
         msg = {'perm_info': self.perm_info.to_dict(), 'req': req,'txc': tx_reg}
@@ -169,26 +169,28 @@ class Client(Party):
         ledger.wait_for_tx(tx_com.get_id())
         tx_open: Transaction = self.post_opening(open_secret, msg)
         
-        tx_open = ledger.wait_for_tx(tx_open.get_id())
-        self.accept_permission(tx_open)
+        if z_cmd == 'accepted' or z_cmd == 'denied':
+            tx_open = ledger.wait_for_tx(tx_open.get_id())
+            self.respond_to_tx_open(tx_open, z_cmd)
         
         return tx_open
             
     def post_commitment(self, com: commitment.Point):
-        data: dict = {'com': commitment.export_com(com)}
+        data: dict = {
+            'com': commitment.export_com(com),
+            'perm_info': self.perm_info.to_dict(),
+        }
         signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data))
         return ledger.post(TxType.COMMITMENT.value, data, signer)
     
     def post_opening(self, open_secret: commitment.Scalar, message: dict):
         data: dict = {
             'message': message,
-            'open': commitment.export_secret(open_secret)
+            'opening': commitment.export_secret(open_secret)
         }
         signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data))
         return ledger.post(TxType.OPENING.value, data, signer)
             
-    def accept_permission(self, tx_open: Transaction):
-        return self.respond_to_tx_open(tx_open, 'accepted')
     
     def respond_to_tx_open(self, tx_open: Transaction, action: str):
         data: dict = {

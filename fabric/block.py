@@ -133,6 +133,12 @@ class Block:
                 return tx
         return None
     
+    def find_transaction_by_type(self, txtype: str | list[str]):
+        for tx in self.data.transactions:
+            if tx.get_type() == txtype:
+                return tx
+        return None
+    
     def to_dict(self):
         return {
             '_id': self.header.number,
