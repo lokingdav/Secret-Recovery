@@ -137,11 +137,9 @@ class Server(Party):
         ):
             raise Exception("Invalid permission request")
         
-        # sign permission
-        client_regtx: Transaction = ledger.find_transaction_by_id(recover_req['reg_tx_id'])
         perm = {
-            'server_regtx': self.get_regtx().to_dict(),
-            'client_regtx': client_regtx.to_dict(),
+            'server_regtx': self.regtx_id,
+            'client_regtx': recover_req['regtx_id'],
             'chal_window_c': [block.to_dict() for block in chal_window_c],
             'com_window_req': [block.to_dict() for block in com_window_req],
             'chal_window_req': [block.to_dict() for block in chal_window_req],
@@ -196,11 +194,7 @@ class Server(Party):
         )
             
     def verify_permission_request(self, tx_open: Transaction, com_window_req: list[Block], chal_window_req: list[Block]) -> list[Block]:
-        blocks: list[tuple[Block, Transaction]] = window.find_other_openings(
-            window=chal_window_req,
-            perm_info=tx_open.data['message']['perm_info'],
-            exclude=tx_open.get_id()
-        )
+        blocks: list[tuple[Block, Transaction]] = window.find_other_openings(window=chal_window_req, tx_open=tx_open)
         
         if not blocks:
             return True
@@ -227,20 +221,19 @@ class Server(Party):
     
     def get_chal_window_c(self, reg_tx_id: str, tx_open: Transaction) -> list[Block]:
         t_chal: int = tx_open.data['message']['perm_info']['t_chal']
-        print('reg_tx_id', reg_tx_id)
         block_containing_txc: Block = ledger.find_block_by_transaction_id(reg_tx_id)
         start = block_containing_txc.get_number() + 1 # Start after the block containing tx_open
         end = start + t_chal # End at the block containing tx_open + t_chal
         return ledger.get_blocks_in_range(start_number=start, end_number=end)
     
-    def get_com_window_req(tx_open: Transaction) -> list[Block]:
+    def get_com_window_req(self, tx_open: Transaction) -> list[Block]:
         t_open: int = tx_open.data['message']['perm_info']['t_open']
         block_containing_tx_open: Block = ledger.find_block_by_transaction_id(tx_open.get_id())
         start = block_containing_tx_open.get_number() - t_open # t_open blocks before the block containing tx_open
         end = block_containing_tx_open.get_number() + config.T_OPEN_BUFFER # buffer blocks after tx_open
         return ledger.get_blocks_in_range(start_number=start, end_number=end)
     
-    def get_chal_window_req(tx_open: Transaction) -> list[Block]:
+    def get_chal_window_req(self, tx_open: Transaction) -> list[Block]:
         t_chal: int = tx_open.data['message']['perm_info']['t_chal']
         block_containing_tx_open: Block = ledger.find_block_by_transaction_id(tx_open.get_id())
         start = block_containing_tx_open.get_number() # Start at the block containing tx_open
