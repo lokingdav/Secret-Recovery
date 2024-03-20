@@ -117,9 +117,9 @@ class Server(Party):
         return data['ctx']
     
     def process_recover(self, recover_req: dict) -> EnclaveRes:
-        tx_open: Transaction = ledger.wait_for_tx(recover_req['tx_open_id'])
+        tx_open: Transaction = ledger.wait_for_tx(tx_id=recover_req['tx_open_id'], name='opening')
         
-        chal_window_c: list[Block] = self.get_chal_window_c(recover_req['reg_tx_id'], tx_open)
+        chal_window_c: list[Block] = self.get_chal_window_c(recover_req['regtx_id'], tx_open)
         chal_window_c = self.verify_registration_tx(chal_window_c)
         
         com_window_req: list[Block] = self.get_com_window_req(tx_open)

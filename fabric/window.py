@@ -2,7 +2,8 @@ from fabric.block import Block
 from fabric.transaction import TxType, Transaction
 
 def find_commitment_for_opening(window: list[Block], tx_open: Transaction) -> tuple[Block, Transaction]:
-    block_open: Block = tx_open.get_block()
+    block_open: dict = tx_open.get_block()
+    block_open: Block = Block.from_dict(block_open)
     perm_info: dict = tx_open.data['message']['perm_info']
     
     for block in window:

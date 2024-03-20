@@ -153,24 +153,25 @@ class Client(Party):
         self.rsakeys: ciphers.RSAKeyPair = ciphers.rsa_keygen()
         req: dict = {
             'action': 'recover',
-            'pk': self.rsakeys.export_pubkey(),
+            'pk': self.rsakeys.export_pubkey().hex(),
         }
         tx_open: Transaction = self.generate_permission(req, z_cmd)
-        return {'tx_open_id': tx_open.get_id(), 'reg_tx_id': self.regtx_id}
+        return {'tx_open_id': tx_open.get_id(), 'regtx_id': self.regtx_id}
     
     def generate_permission(self, req: dict, z_cmd: str = None) -> Transaction:
-        tx_reg: Transaction = ledger.find_transaction_by_id(self.regtx_id)
-        tx_reg = tx_reg.to_dict() if tx_reg else None
-        msg = {'perm_info': self.perm_info.to_dict(), 'req': req,'txc': tx_reg}
+        msg: dict = {
+            'req': req,
+            'txc_id': self.regtx_id,
+            'perm_info': self.perm_info.to_dict(), 
+        }
         com, open_secret = commitment.commit(message=msg)
-        
         tx_com: Transaction = self.post_commitment(com)
         
-        ledger.wait_for_tx(tx_com.get_id())
-        tx_open: Transaction = self.post_opening(open_secret, msg)
+        ledger.wait_for_tx(tx_id=tx_com.get_id(), name='commitment')
+        tx_open: Transaction = self.post_opening(open_secret, message=msg)
         
         if z_cmd == 'accepted' or z_cmd == 'denied':
-            tx_open = ledger.wait_for_tx(tx_open.get_id())
+            tx_open = ledger.wait_for_tx(tx_id=tx_open.get_id(), name='opening')
             self.respond_to_tx_open(tx_open, z_cmd)
         
         return tx_open

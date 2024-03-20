@@ -35,12 +35,13 @@ def find_transaction_by_id(tx_id: str) -> Transaction:
         return None
     return block.find_transaction_by_id(tx_id)
 
-def wait_for_tx(tx_id: str, seconds:int = 3) -> Transaction: 
-    print(f"Waiting to see transaction {tx_id} on the ledger...")
+def wait_for_tx(tx_id: str, name: str, seconds:int = 3) -> Transaction: 
+    print(f"Listening to see tx {name}({tx_id}) on the ledger...")
     tx: Transaction = find_transaction_by_id(tx_id)
     while tx is None:
         helpers.wait(seconds)
         tx = find_transaction_by_id(tx_id)
+    print(f"Transaction {name}({tx_id}) found on the ledger\n")
     return tx
 
 def get_blocks_in_range(start_number: int, end_number: int) -> list[Block]:

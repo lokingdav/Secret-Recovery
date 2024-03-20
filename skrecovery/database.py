@@ -59,7 +59,7 @@ def get_pending_txs():
     with open_db() as connection:
         db = connection[config.DB_NAME]
         collection = db['pending_txs']
-        txs = list(collection.find(sort=[('created_at', -1)], limit=config.MAX_TXS_PER_BLOCK))
+        txs = list(collection.find(sort=[('created_at', 1)], limit=config.MAX_TXS_PER_BLOCK))
     return txs
 
 def delete_pending_txs(txs: list[dict]):

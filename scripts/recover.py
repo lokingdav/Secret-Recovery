@@ -10,7 +10,8 @@ def main():
     
     # Client part 1: Initiate recover request
     recover_req: dict = client.init_recover()
-    
+    print(recover_req)
+    return
     # Cloud part 1: Process recover request
     res: EnclaveRes = cloud.process_recover(recover_req)
     

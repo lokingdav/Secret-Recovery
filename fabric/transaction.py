@@ -2,7 +2,6 @@ from enum import Enum
 from crypto import sigma
 import datetime, uuid, random
 from skrecovery import config, database, helpers
-from fabric.block import Block
 
 class TxType(Enum):
     FAKE = 'fake'
@@ -102,9 +101,8 @@ class Transaction:
         data['created_at'] = datetime.datetime.now()
         database.insert_pending_txs(records=[data])
         
-    def get_block(self) -> Block:
-        blk = database.find_block_by_transaction_id(self.get_id())
-        return Block.from_dict(blk)
+    def get_block(self) -> dict:
+        return database.find_block_by_transaction_id(self.get_id())
     
     def size_in_bytes(self):
         return len(self.to_string().encode())
