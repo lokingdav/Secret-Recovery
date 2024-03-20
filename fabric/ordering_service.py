@@ -121,6 +121,6 @@ def initialize_genesis_block_if_missing():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Start ordering service simulation.')
     args = parser.parse_args()
-    
+    helpers.print_human_readable_json(config.ORDER_SERVICE_CONFIG)
     initialize_genesis_block_if_missing()
     start_ordering_service(args)

@@ -46,7 +46,7 @@ class Client(Party):
         
     def register(self, vks: sigma.PublicKey):
         user: dict = self.load_state()
-        if user:
+        if user and self.is_registered():
             return
         
         # Generate keypair
@@ -65,11 +65,12 @@ class Client(Party):
         tx: Transaction = ledger.post(TxType.CLIENT_REGISTER.value, data, creator)
         self.regtx_id = tx.get_id()
         
-        # Save to database
-        database.insert_user(self.to_dict())
+        if not user:
+            database.insert_user(self.to_dict())
+        else:
+            self.save_state()
     
     def verify_server_authorization(self, tx: Transaction):
-        print(tx)
         if not isinstance(tx, Transaction):
             raise ValueError("Invalid transaction")
         
@@ -204,6 +205,7 @@ class Client(Party):
         return ledger.post(TxType.PERMISSION.value, data, signer)
     
     def setData(self, data: dict):
+        super().setData(data)
         self.id = data['_id']
         self.vk = sigma.import_pub_key(data['vk'])
         self.sk = sigma.import_priv_key(data['sk'])

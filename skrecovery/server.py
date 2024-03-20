@@ -20,7 +20,7 @@ class Server(Party):
         
     def register(self):
         user: dict = self.load_state()
-        if user:
+        if user and self.is_registered():
             return
         # Generate keypair
         sk, vk = sigma.keygen()
@@ -31,7 +31,10 @@ class Server(Party):
         tx: Transaction = ledger.post(TxType.SERVER_REGISTER.value, data, creator)
         self.regtx_id = tx.get_id()
         # Save to database
-        database.insert_user(self.to_dict())
+        if not user:
+            database.insert_user(self.to_dict())
+        else:
+            database.update_user(self.to_dict())
         
     def authorize_registration(self, client_regtx_id: str):
         # Find client registration transaction
@@ -145,6 +148,8 @@ class Server(Party):
             'open': tx_open.data
         }
         
+        return perm
+        
         # Post to ledger
         data = {
             'action': 'permission',
@@ -222,6 +227,7 @@ class Server(Party):
     
     def get_chal_window_c(self, reg_tx_id: str, tx_open: Transaction) -> list[Block]:
         t_chal: int = tx_open.data['message']['perm_info']['t_chal']
+        print('reg_tx_id', reg_tx_id)
         block_containing_txc: Block = ledger.find_block_by_transaction_id(reg_tx_id)
         start = block_containing_txc.get_number() + 1 # Start after the block containing tx_open
         end = start + t_chal # End at the block containing tx_open + t_chal
@@ -246,6 +252,7 @@ class Server(Party):
         return EnclaveRes.deserialize(res)
     
     def setData(self, data: dict):
+        super().setData(data)
         self.id = data['_id']
         self.vk = sigma.import_pub_key(data['vk'])
         self.sk = sigma.import_priv_key(data['sk'])

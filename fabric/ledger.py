@@ -35,7 +35,7 @@ def find_transaction_by_id(tx_id: str) -> Transaction:
         return None
     return block.find_transaction_by_id(tx_id)
 
-def wait_for_tx(tx_id: str, name: str, seconds:int = 3) -> Transaction: 
+def wait_for_tx(tx_id: str, name: str = '', seconds:int = 3) -> Transaction: 
     print(f"Listening to see tx {name}({tx_id}) on the ledger...")
     tx: Transaction = find_transaction_by_id(tx_id)
     while tx is None:
