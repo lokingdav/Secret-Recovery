@@ -7,6 +7,7 @@ from skrecovery import helpers, database, config
 from enclave.response import EnclaveRes
 from enclave.requests import EnclaveReqType
 from fabric.transaction import TxType, Signer, Transaction
+from skrecovery.permission import Permission
 
 class Server(Party):
     def __init__(self, id: int = 0) -> None:
@@ -138,14 +139,17 @@ class Server(Party):
         ):
             raise Exception("Invalid permission request")
         
-        perm = {
-            'server_regtx': self.regtx_id,
-            'client_regtx': recover_req['regtx_id'],
-            'chal_window_c': [block.to_dict() for block in chal_window_c],
-            'com_window_req': [block.to_dict() for block in com_window_req],
-            'chal_window_req': [block.to_dict() for block in chal_window_req],
-            'open': tx_open.data
-        }
+        client_regtx: Transaction = ledger.find_transaction_by_id(recover_req['regtx_id'])
+        tx_reg: Transaction = ledger.get_registration_authorization_tx(client_regtx)
+        
+        permission: Permission = Permission()
+        permission.open_tx = tx_open
+        permission.tx_reg = tx_reg
+        permission.server_regtx = self.regtx
+        permission.client_regtx = client_regtx
+        permission.chal_window_c = chal_window_c
+        permission.com_window_req = com_window_req
+        permission.chal_window_req = chal_window_req
         
         # Post to ledger
         data = {
@@ -175,12 +179,13 @@ class Server(Party):
         enclave_req: dict = {
             'type': EnclaveReqType.RECOVER.value,
             'params': {
-                'perm': perm,
+                'perm': permission.to_dict(),
                 'req': tx_open.data['message']['req'],
                 'pk': tx_open.data['message']['req']['pk'],
                 'ctx': ctx_record['ctx']
             }
         }
+        
         return self.enclave_socket(enclave_req), wait_time
         
     def verify_registration_tx(self, chal_window_c: list[Block]) -> list[Block]:

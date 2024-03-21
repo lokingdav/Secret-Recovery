@@ -8,6 +8,7 @@ class TxType(Enum):
     GENESIS = 'genesis'
     REQUEST = 'request'
     OPENING = 'opening'
+    OPEN_RESPONSE = 'open-response'
     RESPONSE = 'response'
     COMMITMENT = 'commitment'
     PERMISSION = 'permission'

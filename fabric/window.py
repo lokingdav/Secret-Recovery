@@ -27,3 +27,14 @@ def find_other_openings(window: list[Block], tx_open: Transaction) -> list[tuple
             if tx.get_type() == TxType.OPENING.value and tx.data['message']['perm_info'] == perm_info:
                 items.append((block, tx))
     return items
+
+def verify_window(chain: list[Block]) -> bool:
+    num_blocks = len(chain)
+    for i in range(0, num_blocks):
+        if not chain[i].verify():
+            return False
+        if i == 0:
+            continue
+        if not chain[i].verify_previous_block(prev_block=chain[i-1]):
+            return False
+    return True

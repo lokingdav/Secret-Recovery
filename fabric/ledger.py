@@ -1,7 +1,7 @@
 from fabric.block import Block
 from skrecovery import database, helpers
 from fabric.setup import load_MSP, MSP
-from fabric.transaction import Transaction, TxHeader, Signer
+from fabric.transaction import Transaction, TxHeader, Signer, TxType
 
 msp: MSP = load_MSP()
 
@@ -51,3 +51,21 @@ def wait_for_tx(tx_id: str, name: str = '', seconds:int = 3) -> float:
 def get_blocks_in_range(start_number: int, end_number: int) -> list[Block]:
     items: list[dict] = database.find_blocks_in_range(start_number, end_number)
     return [Block.from_dict(item) for item in items]
+
+def get_registration_authorization_tx(regtx: Transaction):
+    filters: dict = {
+        'data.header.txtype': TxType.AUTHORIZE_REGISTRATION.value,
+        'data.data.perm_info': regtx.data
+    }
+    
+    block: dict = database.find_block_by_filters(filters)
+    block: Block = Block.from_dict(block)
+    
+    if not block:
+        return None
+    
+    for tx in block.data.transactions:
+        if tx.get_type() == TxType.AUTHORIZE_REGISTRATION.value and tx.data['perm_info'] == regtx.data:
+            return tx
+        
+    return None

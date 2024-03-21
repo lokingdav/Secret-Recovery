@@ -1,9 +1,14 @@
 import enclave.storage as storage, json
-from crypto import sigma, ec_group, ciphers
+from crypto import sigma, ec_group, ciphers, commitment
 from skrecovery.client import PermInfo
 from skrecovery import helpers
 from enum import Enum
 from enclave.response import EnclaveRes
+from fabric.transaction import Transaction, Signer, TxType
+import fabric.window as blockchain 
+from fabric.block import Block
+from skrecovery.permission import Permission
+import traceback
 
 class EnclaveReqType(Enum):
     STORE = 'store'
@@ -134,9 +139,9 @@ class RecoverReq(TEEReq):
         
         self.ctx: str = req['params']['ctx']
         self.req: dict = req['params']['req']
-        self.perm: dict = req['params']['perm']
+        self.perm: Permission = Permission.from_dict(req['params']['perm'])
         self.pk = req['params']['pk'] # ciphers.RSAKeyPair.import_key(req['params']['pk'])
-        self.perm_info: PermInfo = PermInfo.from_dict(req['params']['perm']['open']['message']['perm_info'])
+        self.perm_info: PermInfo = PermInfo.from_dict(req['params']['perm']['open_tx']['data']['message']['perm_info'])
         self.retK = storage.get_retK(sigma.stringify(self.perm_info.vkc))
         
     def process_req(self) -> EnclaveRes:
@@ -147,8 +152,10 @@ class RecoverReq(TEEReq):
         try:
             req: dict = { 'action': 'recover', 'pk': self.pk}
             valid_req: bool = helpers.stringify(req) == helpers.stringify(self.req)
-            if self.verify_perm() is False or valid_req is False:
+            if  valid_req is False:
                 raise Exception("Invalid permissions")
+            
+            self.verify_perm() # raise exception if invalid permissions
             
             ctx: ciphers.AESCtx = ciphers.AESCtx.from_string(self.ctx)
             plaintext: bytes = ciphers.aes_dec(self.retK, ctx)
@@ -162,17 +169,106 @@ class RecoverReq(TEEReq):
             data: dict = {
                 'data': plaintext['data'].decode('utf-8') if isinstance(plaintext['data'], bytes) else plaintext['data'],
                 'perm_info': self.perm_info.to_dict(),
+                'perm': self.perm.to_dict(),
                 'req': self.req,
-                'perm': self.perm,
             }
             pk = ciphers.RSAKeyPair.import_key(bytes.fromhex(self.pk))
             ctx: ciphers.RSACtx = ciphers.rsa_enc(pk, data=data)
             res.payload = {'ctx_fin': ctx.to_string()}
         except Exception as e:
+            traceback.print_exc()
             res.error = str(e)
             
         res.time_taken = self.benchmark.end().total(short=False)
         return res
         
     def verify_perm(self) -> bool:
+        perm_info_str: str = helpers.stringify(self.perm.client_regtx.data)
+        perm_info_prime: str = helpers.stringify(self.perm.open_tx.data['message']['perm_info'])
+        if perm_info_str != perm_info_prime:
+            raise Exception("Invalid permissions: perm_info_str != perm_info_prime")
+        
+        req_str: str = helpers.stringify(self.req)
+        open_prime: str = helpers.stringify(self.perm.open_tx.data)
+        if req_str not in open_prime:
+            raise Exception("Invalid permissions: req_str not in open_prime")
+        
+        if not self.perm.client_regtx.signature.verify(self.perm.client_regtx.data):
+            raise Exception("Invalid permissions: client_regtx signature")
+        
+        # verify window
+        self.verify_windows()
+        
+        # check if server accepted/denied registration
+        # tx_reg: Transaction = Transaction.from_dict(self.perm['tx_reg'])
+        signer: Signer = Signer.from_dict(self.perm.tx_reg.data['authorization'])
+        if not signer.verify(self.perm_info.to_dict()):
+            raise Exception("Invalid permissions: server signature")
+        
+        self.check_com_opening()
+        
+    def verify_windows(self) -> bool:
+        if not blockchain.verify_window(self.perm.chal_window_c):
+            raise Exception("Invalid permissions: chal_window_c")
+        if not blockchain.verify_window(self.perm.com_window_req):
+            raise Exception("Invalid permissions: com_window_req")
+        if not blockchain.verify_window(self.perm.chal_window_req):
+            raise Exception("Invalid permissions: chal_window_req")
+    
+    def check_com_opening(self):
+        block, tx_com = blockchain.find_commitment_for_opening(
+            window=self.perm.com_window_req, 
+            tx_open=self.perm.open_tx
+        )
+        if not tx_com or not block:
+            raise Exception("Invalid permissions: tx_com or block")
+        
+        if not commitment.open_com(
+            com=tx_com.data['com'], 
+            msg=self.perm.open_tx.data['message'], 
+            sec=self.perm.open_tx.data['opening']
+        ):
+            raise Exception("Invalid permissions: commitment verification failed")
+        
+        # check if client accepted/denied tx_open
+        for block in self.perm.chal_window_req:
+            for tx in block.data.transactions:
+                if tx.get_type() == TxType.OPEN_RESPONSE.value and tx.data['perm_info'] == self.perm_info.to_dict():
+                    if not tx.signature.verify(tx.data, self.perm_info.vkc):
+                        raise Exception("Invalid permissions: signature verification failed")
+                    if tx.data['action'] == 'denied':
+                        raise Exception("Invalid permissions: tx_open not denied")
+        
+        blocks: list[tuple[Block, Transaction]] = blockchain.find_other_openings(
+            window=self.perm.chal_window_req, 
+            tx_open=self.perm.open_tx
+        )
+        
+        if not blocks:
+            return True
+        
+        for block, tx_open_prime in blocks:
+            block_com, tx_com = blockchain.find_commitment_for_opening(
+                window=self.perm.com_window_req,
+                tx_open=tx_open_prime
+            )
+            if not block_com:
+                continue
+            is_valid_opening = commitment.open_com(
+                com=tx_com.data['com'],
+                msg=tx_open_prime.data['message'],
+                sec=tx_open_prime.data['opening']
+            )
+            
+            distance = block.get_number() - block_com.get_number()
+            
+            if is_valid_opening and distance <= self.perm.open_tx.data['message']['perm_info']['t_open']:
+                raise Exception("Invalid permissions: invalid opening")
+        
+        check1: bool = len(self.perm.com_window_req) == self.perm_info.t_open + 1 # buffer
+        check2: bool = len(self.perm.chal_window_req) == self.perm_info.t_chal
+        if not check1 or not check2:
+            raise Exception("Invalid permissions: check1 or check2")
+        
         return True
+        

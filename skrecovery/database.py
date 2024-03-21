@@ -172,3 +172,11 @@ def find_blocks_in_range(start_number: int, end_number: int):
         collection = db['ledgers']
         blocks = list(collection.find({'_id': {'$gte': start_number, '$lte': end_number}}))
     return blocks
+
+def find_block_by_filters(filters: dict):
+    block: dict = None
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['ledgers']
+        block = collection.find_one(filters)
+    return block
