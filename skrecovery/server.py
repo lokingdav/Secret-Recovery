@@ -146,12 +146,10 @@ class Server(Party):
             'open': tx_open.data
         }
         
-        return perm
-        
         # Post to ledger
         data = {
             'action': 'permission',
-            'client_regtx': recover_req['reg_tx_id'],
+            'client_regtx': recover_req['regtx_id'],
             'chal_window_c': {
                 'start': chal_window_c[0].get_number(),
                 'end': chal_window_c[-1].get_number()
@@ -168,11 +166,18 @@ class Server(Party):
         creator: Signer = Signer(self.vk, sigma.sign(self.sk, data))
         ledger.post(TxType.PERMISSION.value, data, creator)
         
+        perm_info_hash: str = helpers.hash256(tx_open.data['message']['perm_info'])
+        ctx_record: dict = database.retrieve_ctx(self.id, perm_hash=perm_info_hash)
+        if not ctx_record:
+            raise Exception("No ciphertexts was stored by client")
+        
         enclave_req: dict = {
             'type': EnclaveReqType.RECOVER.value,
             'params': {
                 'perm': perm,
-                'req': tx_open.data['message']['req']
+                'req': tx_open.data['message']['req'],
+                'pk': tx_open.data['message']['req']['pk'],
+                'ctx': ctx_record['ctx']
             }
         }
         return self.enclave_socket(enclave_req)

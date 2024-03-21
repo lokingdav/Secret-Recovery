@@ -193,7 +193,6 @@ class Client(Party):
         signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data))
         return ledger.post(TxType.OPENING.value, data, signer)
             
-    
     def respond_to_tx_open(self, tx_open: Transaction, action: str):
         data: dict = {
             'action': action,
@@ -203,6 +202,16 @@ class Client(Party):
         data['granted' if action == 'accepted' else 'denied'] = sigma.stringify(sig)
         signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data))
         return ledger.post(TxType.PERMISSION.value, data, signer)
+    
+    def complete_recover(self, res: EnclaveRes) -> str:
+        if not res.verify(self.enclave_vk):
+            raise Exception("Invalid response from enclave")
+        
+        ctx: ciphers.RSACtx = ciphers.RSACtx.from_string(res.payload['ctx_fin'])
+        plaintext: bytes = ciphers.rsa_dec(self.rsakeys.priv_key, ctx) 
+        plaintext: str = plaintext.decode('utf-8') if isinstance(plaintext, bytes) else plaintext
+        plaintext: dict = helpers.parse_json(plaintext)
+        return plaintext['data']
     
     def setData(self, data: dict):
         super().setData(data)

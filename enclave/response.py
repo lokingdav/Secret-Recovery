@@ -9,10 +9,9 @@ class EnclaveRes:
         self.is_valid_ctx = False
         self.signature = None
         self.error = None
-        self.ctx_fin = None
     
     def verify(self, vk: str | sigma.PublicKey):
-        return True # todo: sigma.verify(vk, self.payload, self.signature)
+        return True # todo: verify attestation
     
     def serialize(self):
         return {

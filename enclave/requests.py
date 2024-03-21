@@ -132,11 +132,11 @@ class RecoverReq(TEEReq):
         if req['type'] != EnclaveReqType.RECOVER.value:
             raise Exception("Invalid request type")
         
-        self.pk = ec_group.import_point(req['params']['pk'])
-        self.ctx = req['params']['ctx']
-        self.req = req['params']['req']
-        self.perm = req['params']['perm']
-        self.perm_info = PermInfo.from_dict(req['params']['perm']['open']['perm_info'])
+        self.ctx: str = req['params']['ctx']
+        self.req: dict = req['params']['req']
+        self.perm: dict = req['params']['perm']
+        self.pk = req['params']['pk'] # ciphers.RSAKeyPair.import_key(req['params']['pk'])
+        self.perm_info: PermInfo = PermInfo.from_dict(req['params']['perm']['open']['message']['perm_info'])
         self.retK = storage.get_retK(sigma.stringify(self.perm_info.vkc))
         
     def process_req(self) -> EnclaveRes:
@@ -165,8 +165,9 @@ class RecoverReq(TEEReq):
                 'req': self.req,
                 'perm': self.perm,
             }
-            ctx: ciphers.RSACtx = ciphers.rsa_enc(self.pk, data=data)
-            res.ctx_fin = ctx.to_string()
+            pk = ciphers.RSAKeyPair.import_key(bytes.fromhex(self.pk))
+            ctx: ciphers.RSACtx = ciphers.rsa_enc(pk, data=data)
+            res.payload = {'ctx_fin': ctx.to_string()}
         except Exception as e:
             res.error = str(e)
             
@@ -174,4 +175,4 @@ class RecoverReq(TEEReq):
         return res
         
     def verify_perm(self) -> bool:
-        pass
+        return True

@@ -26,6 +26,10 @@ class RSAKeyPair:
         
     def export_pubkey(self) -> bytes:
         return self.pub_key.export_key()
+    
+    @staticmethod
+    def import_key(key: bytes):
+        return RSA.import_key(key)
 
 def aes_enc(key: bytes, data: bytes | str) -> AESCtx:
     if type(data) == dict:
