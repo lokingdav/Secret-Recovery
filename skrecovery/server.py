@@ -119,8 +119,9 @@ class Server(Party):
         data: dict = database.retrieve_ctx(server_id=self.id, perm_hash=perm_hash)
         return data['ctx']
     
-    def process_recover(self, recover_req: dict) -> EnclaveRes:
-        tx_open: Transaction = ledger.wait_for_tx(tx_id=recover_req['tx_open_id'], name='opening')
+    def process_recover(self, recover_req: dict) -> tuple[EnclaveRes, float]:
+        wait_time: float = ledger.wait_for_tx(tx_id=recover_req['tx_open_id'], name='opening')
+        tx_open: Transaction = ledger.find_transaction_by_id(recover_req['tx_open_id'])
         
         chal_window_c: list[Block] = self.get_chal_window_c(recover_req['regtx_id'], tx_open)
         chal_window_c = self.verify_registration_tx(chal_window_c)
@@ -180,7 +181,7 @@ class Server(Party):
                 'ctx': ctx_record['ctx']
             }
         }
-        return self.enclave_socket(enclave_req)
+        return self.enclave_socket(enclave_req), wait_time
         
     def verify_registration_tx(self, chal_window_c: list[Block]) -> list[Block]:
         return chal_window_c # optional implementation

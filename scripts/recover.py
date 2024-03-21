@@ -18,20 +18,15 @@ def main(num_runs, test_name):
         
     for i in range(num_runs):
         # Client part 1: Initiate recover request
-        recover_req: dict = client.init_recover(
-            benchmark=client_bm
-        )
-        # Not needed, but just to be sure it's not closed from the client side
-        client_bm.pause() 
+        client_bm.reset().start()
+        recover_req, client_wait_time = client.init_recover()
+        client_bm.pause().add_entry(-1 * client_wait_time)
         
         # Cloud part 1: Process recover request
-        res: EnclaveRes = cloud.process_recover(
-            recover_req=recover_req,
-            benchmark=cloud_bm
-        )
+        cloud_bm.reset().start()
+        res, cloud_wait_time = cloud.process_recover(recover_req=recover_req)
+        cloud_bm.end().add_entry(-1 * cloud_wait_time)
         enclave_bm.add_entry(res.time_taken)
-        # Not needed, but just to be sure it's not closed from the cloud side
-        cloud_bm.end()
         
         if res.error is not None:
             raise Exception(res.error)
@@ -40,6 +35,7 @@ def main(num_runs, test_name):
         client_bm.resume()
         recovered_secret: str = client.complete_recover(res)
         client_bm.end()
+        
         assert recovered_secret == client_secret_info
         
         print(f'\nBenchmarks for run {i+1}')

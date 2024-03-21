@@ -22,7 +22,7 @@ class Benchmark:
         dur_ms: float = self.get_duration_in_ms()
         self.entries.append(dur_ms)
         self.start_time = 0
-        return dur_ms
+        return self
     
     def add_entry(self, entry: float):
         self.entries.append(entry)
