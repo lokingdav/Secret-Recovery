@@ -37,6 +37,7 @@ def main(num_runs, test_name):
         client_bm.end()
         
         assert recovered_secret == client_secret_info
+        print('Recovered secret:', recovered_secret)
         
         print(f'\nBenchmarks for run {i+1}')
         print('client:', client_bm.entries, client_bm.total())
