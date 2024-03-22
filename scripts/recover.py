@@ -1,3 +1,4 @@
+import argparse
 from skrecovery.client import Client
 from skrecovery.server import Server
 from enclave.response import EnclaveRes
@@ -43,10 +44,16 @@ def main(num_runs, test_name):
         print('client:', client_bm.entries, client_bm.total())
         print('cloud:', cloud_bm.entries, cloud_bm.total())
         print('enclave:', enclave_bm.entries, enclave_bm.total())
+        print('\n')
         
         client_bm.save().reset()
         cloud_bm.save().reset()
         enclave_bm.save().reset()
 
 if __name__ == "__main__":
-    main(num_runs=1, test_name="recover")
+    parser = argparse.ArgumentParser(description='Recover script')
+    parser.add_argument('--num_runs', type=int, default=1, help='Number of runs')
+    parser.add_argument('--test_name', type=str, default='recover', help='Name of the test')
+    args = parser.parse_args()
+    
+    main(num_runs=args.num_runs, test_name=args.test_name)
