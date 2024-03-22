@@ -12,27 +12,6 @@ services:
     volumes:
       - mongodata:/data/db
 
-  # fabric_ordering_service:
-  #   container_name: ordering_service
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile-fabric-ordering-service
-  #   volumes:
-  #     - '.:/app'
-  #   depends_on:
-  #     - db
-
-  # fabric_noise_simulation:
-  #   container_name: noise_simulation
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile-fabric-noise-simulation
-  #   volumes:
-  #     - '.:/app'
-  #   depends_on:
-  #     - db
-  #     - fabric_ordering_service
-
 networks:
   default:
     name: skrecovery_network
