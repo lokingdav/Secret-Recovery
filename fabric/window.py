@@ -10,8 +10,10 @@ def find_commitment_for_opening(window: list[Block], tx_open: Transaction) -> tu
         if block.get_number() > block_open.get_number():
             continue
         for tx in block.data.transactions:
-            if tx.get_type() == TxType.COMMITMENT.value and tx.data['perm_info'] == perm_info:
-                return block, tx
+            if tx.get_type() == TxType.COMMITMENT.value:
+                if tx.data['perm_info'] == perm_info:
+                    if tx.get_id() == tx_open.data['tx_com']:
+                        return block, tx
             
     return None, None
             

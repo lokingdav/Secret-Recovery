@@ -168,26 +168,31 @@ class Client(Party):
             'txc_id': self.regtx_id,
             'perm_info': self.perm_info.to_dict(), 
         }
-        com, open_secret = commitment.commit(message=msg)
+        
+        com, com_key = commitment.commit(message=msg)
+        com: str = commitment.export_com(com)
+        com_key: str = commitment.export_secret(com_key)
+        
         tx_com: Transaction = self.post_commitment(com)
         
         wait_time: float = ledger.wait_for_tx(tx_id=tx_com.get_id(), name='commitment')
-        tx_open: Transaction = self.post_opening(open_secret, message=msg)
-        
+        tx_open: Transaction = self.post_opening(
+            key=com_key, 
+            message=msg,
+            tx_com=tx_com.get_id()
+        )
         return tx_open, wait_time
             
-    def post_commitment(self, com: commitment.Point):
-        data: dict = {
-            'com': commitment.export_com(com),
-            'perm_info': self.perm_info.to_dict(),
-        }
+    def post_commitment(self, com: str):
+        data: dict = {'com': com, 'perm_info': self.perm_info.to_dict()}
         signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data))
         return ledger.post(TxType.COMMITMENT.value, data, signer)
     
-    def post_opening(self, open_secret: commitment.Scalar, message: dict):
+    def post_opening(self, key: str, message: dict, tx_com: str):
         data: dict = {
             'message': message,
-            'opening': commitment.export_secret(open_secret)
+            'opening': key,
+            'tx_com': tx_com,
         }
         signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data))
         return ledger.post(TxType.OPENING.value, data, signer)
