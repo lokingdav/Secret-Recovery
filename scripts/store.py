@@ -1,3 +1,4 @@
+import argparse
 from crypto.ciphers import AESCtx
 from skrecovery.client import Client
 from skrecovery.server import Server
@@ -51,4 +52,9 @@ def main(num_runs, test_name = None):
         enclave_bm.save().reset()
 
 if __name__ == "__main__":
-    main(num_runs=100, test_name="store")
+    parser = argparse.ArgumentParser(description='Store script')
+    parser.add_argument('-n', '--num_runs', type=int, default=1, help='Number of runs')
+    parser.add_argument('-t', '--test_name', type=str, default='store', help='Name of the test')
+    args = parser.parse_args()
+    
+    main(num_runs=args.num_runs, test_name=args.test_name)
