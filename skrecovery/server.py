@@ -8,6 +8,7 @@ from enclave.response import EnclaveRes
 from enclave.requests import EnclaveReqType
 from fabric.transaction import TxType, Signer, Transaction
 from skrecovery.permission import Permission
+from skrecovery.vsock import VsockClient
 
 class Server(Party):
     def __init__(self, id: int = 0) -> None:
@@ -252,7 +253,22 @@ class Server(Party):
         return ledger.get_blocks_in_range(start_number=start, end_number=end)
     
     def enclave_socket(self, req: dict) -> EnclaveRes:
-        res: dict = TEE(req)
+        client: VsockClient = self.send_to_enclave(req)
+        res: EnclaveRes = self.receive_from_enclave(client)
+        client.disconnect()
+        return res
+    
+    def send_to_enclave(self, req: dict) -> VsockClient: 
+        client: VsockClient = VsockClient()
+        enclave_endpoint = (config.ENCLAVE_CID, config.ENCLAVE_PORT)
+        client.connect(enclave_endpoint)
+        req: bytes = helpers.stringify(req).encode('utf-8')
+        client.send_data(req)
+        return client
+    
+    def receive_from_enclave(self, client: VsockClient) -> EnclaveRes:
+        res: bytes = client.recv_data()
+        res: dict = helpers.parse_json(bytes(res).decode('utf-8'))
         return EnclaveRes.deserialize(res)
     
     def setData(self, data: dict):
@@ -286,4 +302,3 @@ class Server(Party):
         
         
         
-    

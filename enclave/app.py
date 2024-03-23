@@ -14,7 +14,10 @@ def parse_req(req) -> StoreReq | RetrieveReq | RemoveReq | RecoverReq | VerifyCi
     elif req['type'] == EnclaveReqType.VERIFY_CIPHERTEXT.value:
         return VerifyCiphertextReq(req)
 
-def TEE(req: dict | str) -> dict | str:
+def TEE(req: dict | str | bytes) -> dict | str:
+    if type(req) == bytes:
+        req = req.decode()
+        
     if type(req) == str:
         req = parse_json(req)
         
