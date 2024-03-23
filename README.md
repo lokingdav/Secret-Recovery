@@ -42,6 +42,8 @@ remember to replace the ```key-name``` and ```security-groups``` with your own v
 
 - Install the enclave software on the parent instance using the instructions in the [AWS Nitro Enclaves documentation](https://docs.aws.amazon.com/enclaves/latest/user/nitro-enclave-cli-install.html). Be sure to select the appropriate Amazon linux version corresponding to the parent instance. If you are using the Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type, you can use the ```amazon-linux-2-install-nitro.sh``` script in the project root folder.
 
+- The commands below assume you are in the project root folder. If you are not, navigate to the project root folder.
+
 - Build the enclave image by running the ```build-and-run-enclave.sh``` script in the project root folder. This script will 
     - Build the enclave docker image 
     - Run ```nitro-cli``` to build the enclave ```.eif``` file and output enclave measurement information (PCR0, PCR1, and PCR2) to ```nitro-cli-build.log``` log file
