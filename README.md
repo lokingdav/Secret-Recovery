@@ -36,6 +36,9 @@ aws ec2 run-instances \
 remember to replace the ```key-name``` and ```security-groups``` with your own values. The ```image-id``` in the example above is the Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type: you can change it to another AMI if you want.
 
 - Connect to the parent instance: ```ssh -i your_private_key.pem ec2-user@public-ip```. Replace ```your_private_key.pem``` and ```public-ip``` with your own. For more information on how to connect to an instance, see [Connecting to Your Linux Instance Using SSH](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connect-linux-inst-ssh.html)
+    - Update system and install git: ```sudo yum update -y && sudo yum install git -y```
+    - Set user name and email for git: ```git config --global user.name "Your Name" && git config --global user.email "Your Email"```
+    - Clone this repository
 
 - Install the enclave software on the parent instance using the instructions in the [AWS Nitro Enclaves documentation](https://docs.aws.amazon.com/enclaves/latest/user/nitro-enclave-cli-install.html). Be sure to select the appropriate Amazon linux version corresponding to the parent instance. If you are using the Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type, you can use the ```amazon-linux-2-install-nitro.sh``` script in the project root folder.
 
