@@ -12,10 +12,9 @@ def start_enclave(port: int):
 
 def main():
     parser = argparse.ArgumentParser(prog='vsock-sample')
-    parser.add_argument('-p', '--port', type=int, help='The local port to listen on.')
+    parser.add_argument('-p', '--port', type=int, help='The local port to listen on.', default=5005)
     args = parser.parse_args()
-    port = args.port if args.port else 5005
-    start_enclave(port)
+    start_enclave(args.port)
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,8 @@
+{
+    "enclave_name": "sk_enclave",
+    "cpu_count": 2,
+    "memory_mib": 4096,
+    "eif_path": "sk_enclave.eif",
+    "enclave_cid": 16,
+    "debug_mode": true
+}
