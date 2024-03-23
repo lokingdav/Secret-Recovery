@@ -253,9 +253,16 @@ class Server(Party):
         return ledger.get_blocks_in_range(start_number=start, end_number=end)
     
     def enclave_socket(self, req: dict) -> EnclaveRes:
-        client: VsockClient = self.send_to_enclave(req)
-        res: EnclaveRes = self.receive_from_enclave(client)
-        client.disconnect()
+        res: EnclaveRes = None
+        
+        if config.USE_VSOCK:
+            client: VsockClient = self.send_to_enclave(req)
+            res: EnclaveRes = self.receive_from_enclave(client)
+            client.disconnect()
+        else: 
+            res: dict = TEE(req)
+            res: EnclaveRes = EnclaveRes.deserialize(res)
+            
         return res
     
     def send_to_enclave(self, req: dict) -> VsockClient: 

@@ -8,11 +8,6 @@ def env(envname, default=""):
     value = getenv(envname)
     return value or default
 
-REDIS_DB = env("REDIS_DB")
-REDIS_HOST = env("REDIS_HOST")
-REDIS_PORT = env("REDIS_PORT")
-REDIS_PASS = env("REDIS_PASS")
-
 DB_HOST = env("DB_HOST", "127.0.0.1")
 DB_PORT = env("DB_PORT", 27017)
 DB_NAME = env("DB_NAME", "skrec")
@@ -38,5 +33,12 @@ ORDER_SERVICE_CONFIG = {
     "MAX_TXS_PER_BLOCK": MAX_TXS_PER_BLOCK
 }
 
+USE_VSOCK = bool(int(env("USE_VSOCK", 1)))
 ENCLAVE_CID = int(env("ENCLAVE_CID", 3))
 ENCLAVE_PORT = int(env("ENCLAVE_PORT", 5005))
+
+SERVER_ENCLAVE_CONFIG = {
+    'USE_VSOCK': USE_VSOCK,
+    'ENCLAVE_CID': ENCLAVE_CID,
+    'ENCLAVE_PORT': ENCLAVE_PORT
+}
