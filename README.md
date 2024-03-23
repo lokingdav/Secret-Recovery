@@ -44,6 +44,8 @@ remember to replace the ```key-name``` and ```security-groups``` with your own v
 
 - The commands below assume you are in the project root folder. If you are not, navigate to the project root folder.
 
+- Modify the nitro-cli allocator service to allow 4096 MB of memory for the enclave.
+
 - Build the enclave image by running the ```build-and-run-enclave.sh``` script in the project root folder. This script will 
     - Build the enclave docker image 
     - Run ```nitro-cli``` to build the enclave ```.eif``` file and output enclave measurement information (PCR0, PCR1, and PCR2) to ```nitro-cli-build.log``` log file
