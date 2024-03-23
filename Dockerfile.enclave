@@ -1,8 +1,7 @@
-# Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
-
 FROM python:3.11-alpine3.18
 
-COPY enclave-vsock.py .
+COPY . .
 
-CMD ["/usr/local/bin/python3", "enclave-vsock.py", "--port", "5005"]
+RUN pip install --no-cache-dir -r requirements.txt
+
+CMD ["python", "enclave-vsock.py", "--port", "5005"]
