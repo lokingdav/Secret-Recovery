@@ -26,7 +26,7 @@ To run the scripts, you can use the following commands: ```python -m scripts.sto
 - Create a parent instance with the following command:
 ```bash
 aws ec2 run-instances \
---image-id ami-01387af90a62e3c01 \
+--image-id ami-000c0df09737657b6 \
 --count 1 \
 --instance-type m5.xlarge \
 --key-name your_key_name \
