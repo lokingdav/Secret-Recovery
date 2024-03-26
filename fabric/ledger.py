@@ -3,7 +3,7 @@ from skrecovery import database, helpers
 from fabric.setup import load_MSP, MSP
 from fabric.transaction import Transaction, TxHeader, Signer, TxType
 
-msp: MSP = load_MSP()
+msp: MSP = None
 
 def post(txType: str, data: dict, signature: Signer):
     if type(txType) != str:
@@ -12,6 +12,9 @@ def post(txType: str, data: dict, signature: Signer):
         raise ValueError('Invalid transaction data')
     if type(signature) != Signer:
         raise ValueError('Invalid signature')
+    
+    if not msp:
+        setup()
     
     tx = Transaction()
     tx.data = data
@@ -69,3 +72,7 @@ def get_registration_authorization_tx(regtx: Transaction):
             return tx
         
     return None
+
+def setup():
+    global msp
+    msp = load_MSP()

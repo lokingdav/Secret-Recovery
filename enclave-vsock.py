@@ -1,4 +1,5 @@
 import argparse
+import traceback
 from skrecovery.vsock import VsockServer
 
 def start_enclave(port: int):
@@ -8,6 +9,7 @@ def start_enclave(port: int):
         server.listen()
     except Exception as e:
         print(f"Failed to start enclave: {e}")
+        traceback.print_exc()
         exit(1)
 
 def main():
