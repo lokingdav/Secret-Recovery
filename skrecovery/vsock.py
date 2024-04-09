@@ -1,86 +1,83 @@
-import socket
-from enclave.app import TEE
-from skrecovery import helpers
+import socket, threading
 
-class VsockClient:
-    """Client"""
-    def __init__(self, conn_tmo=5):
-        self.conn_tmo = conn_tmo
+PORT = 5005
+HEADER = 64
+FORMAT = "utf-8"
+BUFFER_SIZE = 2048
+DISCONNECT_MESSAGE = "<<EOT>>"
+SERVER = socket.VMADDR_CID_ANY # socket.gethostbyname(socket.gethostname())
+ADDR = (SERVER, PORT)
+SOCK_FAMILY = socket.AF_VSOCK
+SOCK_TYPE = socket.SOCK_STREAM
 
-    def connect(self, endpoint: tuple):
-        """Connect to the remote endpoint"""
-        self.sock = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)
-        self.sock.settimeout(self.conn_tmo)
-        self.sock.connect(endpoint)
+def server_create(address: tuple = None) -> socket.socket:
+    server = socket.socket(SOCK_FAMILY, SOCK_TYPE)
+    server.bind(address if address else ADDR)
+    server.listen()
+    return server
 
-    def send_data(self, data: bytes):
-        """Send data to a remote endpoint"""
-        if not isinstance(data, bytes):
-            raise TypeError('data must be bytes')
-        
-        self.sock.sendall(data)
+def connect(address: tuple = None) -> socket.socket:
+    client: socket.socket = socket.socket(SOCK_FAMILY, SOCK_TYPE)
+    client.settimeout(5)
+    client.connect(address if address else ADDR)
+    return client
 
-    def recv_data(self):
-        """Receive data from a remote endpoint and return it as bytes."""
-        data_received = bytearray()
-        while True:
-            data = self.sock.recv(1024)
-            if not data:
+def disconnect(conn: socket.socket):
+    send(conn, DISCONNECT_MESSAGE)
+    conn.close()
+
+def recv_fixed_msg(conn: socket.socket, msg_length: int):
+    msg = ''
+    while len(msg) < msg_length:
+        num_bytes = min(BUFFER_SIZE, msg_length - len(msg))
+        m = conn.recv(num_bytes).decode(FORMAT)
+        msg += m
+    return msg
+
+def response_recv(conn: socket.socket) -> str:
+    data: str = ''
+    msg_length = conn.recv(HEADER).decode(FORMAT)
+    if msg_length:
+        msg_length = int(msg_length)
+        print('Response length: ', msg_length)
+        data = recv_fixed_msg(conn, msg_length)
+    return data
+
+def server_handle_client_connection(conn: socket.socket, addr):
+    print(f"[NEW CONNECTION] {addr} connected.")
+    while True:
+        msg_length = conn.recv(HEADER).decode(FORMAT)
+        if msg_length:
+            msg_length = int(msg_length)
+            print('Message length: ', msg_length)
+            msg = recv_fixed_msg(conn, msg_length)
+            
+            if msg == DISCONNECT_MESSAGE:
                 break
-            data_received.extend(data)
-        return bytes(data_received)
-
-    def disconnect(self):
-        """Close the client socket"""
-        self.sock.close()
-
-class VsockServer:
-    """Server"""
-    def __init__(self, conn_backlog=128):
-        self.conn_backlog = conn_backlog
-
-    def bind(self, port):
-        """Bind and listen for connections on the specified port"""
-        self.sock = socket.socket(socket.AF_VSOCK, socket.SOCK_STREAM)
-        self.sock.bind((socket.VMADDR_CID_ANY, port))
-        self.sock.listen(self.conn_backlog)
+                
+            print('Processing request...')
+            res: str = msg
+            send(conn=conn, msg=res)
+            
+    conn.close()
+    print(f"[CONNECTION CLOSED] {addr} disconnected.")
+    
+def server_start(server: socket.socket):
+    print(f"[LISTENING] Server is listening on {SERVER}:{PORT}")
+    while True:
+        conn, addr = server.accept()
+        thread = threading.Thread(
+            target=server_handle_client_connection, 
+            args=(conn, addr)
+        )
+        thread.start()
+        print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
         
-    def receive_data(self, client: socket.socket):
-        """Receive data from a remote endpoint and return it as bytes."""
-        data_received = bytearray()
-        while True:
-            try:
-                chunk = client.recv(1024)
-            except socket.error:
-                break
-            if not chunk:
-                break
-            data_received.extend(chunk)
-        return bytes(data_received)
-        
-    def process_and_respond(self, client: socket.socket):
-        """Process received data and send a response"""
-        data: bytes = self.receive_data(client)
-        res: bytes = self.process_data(data)
-        client.sendall(res)
-
-    def process_data(self, data: bytes) -> bytes:
-        """Process the received data and return a response"""
-        res: dict = TEE(data)
-        return helpers.stringify(res).encode('utf-8')
-
-    def listen(self):
-        """Receive data from a remote endpoint and send a response"""
-        while True:
-            client, (remote_cid, remote_port) = self.sock.accept()
-            try:
-                self.process_and_respond(client)
-            finally:
-                client.close()
-
-    def send_data(self, data):
-        """Send data to a remote endpoint"""
-        while True:
-            (to_client, (remote_cid, remote_port)) = self.sock.accept()
-            to_client.sendall(data)
-            to_client.close()
+def send(conn: socket.socket, msg: str):
+    message = msg.encode(FORMAT)
+    msg_length = len(message)
+    send_length = str(msg_length).encode(FORMAT)
+    send_length += b" " * (HEADER - len(send_length))
+    
+    conn.send(send_length)
+    conn.sendall(message)

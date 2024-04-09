@@ -1,22 +1,14 @@
-import argparse
-import traceback
-from skrecovery.vsock import VsockServer
+import socket, traceback
+from skrecovery import vsock
 
-def start_enclave(port: int):
+def start_enclave():
     try:
-        server: VsockServer = VsockServer()
-        server.bind(port)
-        server.listen()
+        server: socket.socket = vsock.server_create()
+        vsock.server_start(server)
     except Exception as e:
         print(f"Failed to start enclave: {e}")
         traceback.print_exc()
         exit(1)
 
-def main():
-    parser = argparse.ArgumentParser(prog='vsock-sample')
-    parser.add_argument('-p', '--port', type=int, help='The local port to listen on.', default=5005)
-    args = parser.parse_args()
-    start_enclave(args.port)
-
 if __name__ == "__main__":
-    main()
+    start_enclave()
