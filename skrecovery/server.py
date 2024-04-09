@@ -8,7 +8,7 @@ from enclave.response import EnclaveRes
 from enclave.requests import EnclaveReqType
 from fabric.transaction import TxType, Signer, Transaction
 from skrecovery.permission import Permission
-from skrecovery.vsock import VsockClient
+from vsock import VsockClient
 
 class Server(Party):
     def __init__(self, id: int = 0) -> None:

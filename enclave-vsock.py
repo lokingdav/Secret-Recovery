@@ -1,5 +1,5 @@
 import socket
-import skrecovery.vsock as vsock
+import vsock
 
 if __name__ == "__main__":
     server: socket.socket = vsock.server_create()
