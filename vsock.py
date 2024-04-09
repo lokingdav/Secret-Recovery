@@ -1,4 +1,5 @@
 import socket, threading
+import enclave.app as enclave
 
 PORT = 5005
 HEADER = 64
@@ -56,7 +57,7 @@ def server_handle_client_connection(conn: socket.socket, addr):
                 break
                 
             print('Processing request...')
-            res: str = msg
+            res: str = enclave.run(req=msg)
             send(conn=conn, msg=res)
             
     conn.close()

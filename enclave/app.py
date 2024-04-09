@@ -1,5 +1,5 @@
 from enclave.response import EnclaveRes
-from skrecovery.helpers import parse_json
+from skrecovery.helpers import parse_json, stringify
 from enclave.requests import EnclaveReqType, StoreReq, RetrieveReq, RemoveReq, RecoverReq, VerifyCiphertextReq, TEEReq
 
 def parse_req(req) -> StoreReq | RetrieveReq | RemoveReq | RecoverReq | VerifyCiphertextReq:
@@ -14,7 +14,7 @@ def parse_req(req) -> StoreReq | RetrieveReq | RemoveReq | RecoverReq | VerifyCi
     elif req['type'] == EnclaveReqType.VERIFY_CIPHERTEXT.value:
         return VerifyCiphertextReq(req)
 
-def TEE(req: dict | str | bytes) -> dict | str:
+def run(req: dict | str | bytes) -> dict | str:
     if type(req) == bytes:
         req = req.decode()
         
@@ -23,4 +23,4 @@ def TEE(req: dict | str | bytes) -> dict | str:
         
     req: TEEReq = parse_req(req)
     res: EnclaveRes = req.process_req()
-    return res.serialize()
+    return stringify(res.serialize())
