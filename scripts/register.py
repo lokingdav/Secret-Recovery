@@ -2,8 +2,6 @@ from skrecovery.server import Server
 from skrecovery.client import Client
 from fabric.transaction import Transaction
 from fabric import ledger
-from skrecovery import helpers
-import traceback
 
 def main():
     print("Server registration\n")
