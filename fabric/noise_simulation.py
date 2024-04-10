@@ -1,30 +1,38 @@
 from crypto import sigma
 from fabric import ledger
 from fabric.transaction import Transaction, TxType, Signer
-from skrecovery import helpers
+from skrecovery import helpers, config
 import time, random, argparse, multiprocessing, sys, base64
 
-num_processes = 4
+num_processes = 1
 
 def post_fake_tx():
     sk, vk = sigma.keygen()
-    data: dict = {'fake': base64.b64encode(helpers.random_bytes(256)).decode()}
+    size = random.randint(1, 10 * 1024) # random size between 1B and 10KB
+    data: dict = {'fake': base64.b64encode(helpers.random_bytes(size)).decode()}
     vk_str: str = sigma.stringify(vk)
     signature: sigma.Signature = sigma.sign(sk, data)
     tx_signature: Signer = Signer(vk_str, signature)
     tx: Transaction = ledger.post(TxType.FAKE.value, data, tx_signature)
     return tx
 
+def sleep_random():
+    sleeptime = random.uniform(0, 10 / 1000) # random sleep time between 0 and 25 ms
+    time.sleep(sleeptime)
+    
+            
 def worker():
     print(f"Starting worker {multiprocessing.current_process().name}")
-    try:
-        while True:
+    while True:
+        try:
+            # start = helpers.startStopwatch()
             tx: Transaction = post_fake_tx()
-            sleeptime = random.uniform(0, 1.5)
-            time.sleep(sleeptime)
-            print(f"Worker {multiprocessing.current_process().name} posted tx {tx.get_id()} and slept for {sleeptime} seconds")
-    except KeyboardInterrupt:
-        print(f"Stopping worker {multiprocessing.current_process().name}")
+            # end = helpers.stopStopwatch(start)
+            # print(f"Worker {multiprocessing.current_process().name} took {end} ms to post tx {tx.get_id()}")
+            sleep_random()
+            print(f"Worker {multiprocessing.current_process().name} posted tx {tx.get_id()}")
+        except Exception as e:
+            print(f"Worker {multiprocessing.current_process().name} received {e}")
 
 def create_workers():
     processes = []
