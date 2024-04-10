@@ -17,7 +17,8 @@ def post_fake_tx():
     return tx
 
 def sleep_random():
-    sleeptime = random.uniform(0, 10 / 1000) # random sleep time between 0 and 25 ms
+    sleeptime = random.uniform(0, 200 / 1000) # random sleep time between 0 and 25 ms
+    print('Sleeping for', sleeptime, 'seconds')
     time.sleep(sleeptime)
     
             
