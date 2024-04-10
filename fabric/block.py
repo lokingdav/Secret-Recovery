@@ -49,6 +49,9 @@ class BlockData:
     def to_dict(self):
         return [tx.to_dict() for tx in self.transactions]
     
+    def size(self):
+        return len(helpers.stringify(self.to_dict()).encode('utf-8'))
+    
     @staticmethod
     def from_dict(txs: dict):
         txs = [Transaction.from_dict(tx) for tx in txs]
@@ -60,12 +63,14 @@ class BlockMetaData:
         self.creator: Signer = creator
         self.verifiers: list[Signer] = []
         self.last_config_block_number: int = 0
+        self.datasize_mb: float = 0
         
     def to_dict(self) -> dict:
         creator = self.creator.to_dict() if self.creator else None
         return {
             'bitmap': self.bitmap, 
             'creator': creator,
+            'datasize_mb': self.datasize_mb,
             'verifiers': [v.to_dict() for v in self.verifiers],
             'last_config_block_number': self.last_config_block_number
         }
@@ -76,6 +81,7 @@ class BlockMetaData:
         metadata: BlockMetaData = BlockMetaData(data['bitmap'], creator)
         metadata.verifiers = [Signer.from_dict(v) for v in data['verifiers']]
         metadata.last_config_block_number = data['last_config_block_number']
+        metadata.datasize_mb = data.get('datasize_mb', 0)
         return metadata
         
 class Block:
@@ -103,7 +109,11 @@ class Block:
             'previous_hash': self.header.previous_hash,
         }
         
+    def calc_datasize(self):
+        self.metadata.datasize_mb = round(self.data.size() / 1024 / 1024, 3)
+        
     def save(self):
+        self.calc_datasize()
         database.save_block(self.to_dict())
         
     def size(self):

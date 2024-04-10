@@ -100,6 +100,7 @@ class Transaction:
     def send_to_ordering_service(self):
         data = self.to_dict()
         data['created_at'] = datetime.datetime.now()
+        data['size_in_kb'] = round(self.size_in_bytes() / 1024, 3)
         database.insert_pending_txs(records=[data])
         
     def get_block(self) -> dict:

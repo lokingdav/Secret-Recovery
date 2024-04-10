@@ -18,7 +18,6 @@ def post(txType: str, data: dict, signature: Signer):
     
     tx = Transaction()
     tx.data = data
-    tx.response = data
     tx.header = TxHeader(txType)
     tx.signature = signature
     tx.endorse(msp)

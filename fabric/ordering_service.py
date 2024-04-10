@@ -85,11 +85,31 @@ def get_orderers():
             followers.append(OSNode(i))
     return leader, followers
 
+def get_pending_txs():
+    pending_txs = []
+    txs = database.get_pending_txs()
+    total_size_in_kb = 0
+    
+    for tx in txs:
+        size: float = float(tx.get('size_in_kb', 0))
+        if not size:
+            continue
+        
+        if total_size_in_kb + size > config.PREFERRED_MAX_BLOCK_SIZE_MB * 1024:
+            if len(pending_txs) == 0:
+                pending_txs.append(tx)
+            break
+        
+        total_size_in_kb += size
+        pending_txs.append(tx)
+    print(f'Found {len(pending_txs)} pending transactions with size {round(total_size_in_kb / 1024, 2)} MB.')
+    return pending_txs
+
 def start_ordering_service(args):
     leader, followers = get_orderers()
     while True:
         start_time = helpers.startStopwatch()
-        txs = database.get_pending_txs()
+        txs = get_pending_txs()
         # print(f'Found {len(txs)} pending transactions')
         begin_consensus(pending_txs=txs, leader=leader, followers=followers)
         database.delete_pending_txs(txs)
@@ -110,7 +130,6 @@ def initialize_genesis_block_if_missing():
     sk, vk = sigma.keygen()
     tx: Transaction = Transaction()
     tx.data = msp.to_dict()
-    tx.response = tx.data
     tx.header = TxHeader(TxType.GENESIS.value)
     tx.signature = Signer(sigma.stringify(vk), sigma.sign(sk, tx.data))
     tx.endorse(msp)
