@@ -14,6 +14,12 @@ class EnclaveRes:
         return True # todo: verify attestation
     
     def serialize(self):
+        if self.error is not None:
+            return {
+                'type': self.req_type,
+                'error': self.error
+            }
+            
         return {
             'type': self.req_type,
             'signature': sigma.stringify(self.signature),
@@ -30,11 +36,20 @@ class EnclaveRes:
     @staticmethod
     def deserialize(data: dict):
         res = EnclaveRes()
-        res.req_type = data['type']
-        res.payload = data['payload']
-        res.is_removed = bool(data['is_removed'])
-        res.is_valid_ctx = bool(data['is_valid_ctx'])
-        res.signature = sigma.import_signature(data['signature']) if data['signature'] is not None else None
-        res.time_taken = data['time_taken']
-        res.error = data['error']
+        res.req_type = data.get('type', None)
+        res.payload = data.get('payload', {})
+        res.is_removed = bool(data.get('is_removed', False))
+        res.is_valid_ctx = bool(data.get('is_valid_ctx', False))
+        res.signature = sigma.import_signature(data.get('signature')) if data.get('signature') is not None else None
+        res.time_taken = data.get('time_taken', 0)
+        res.error = data.get('error', None)
+        return res
+    
+    @staticmethod
+    def error(code: int, message: str) -> 'EnclaveRes':
+        res = EnclaveRes()
+        res.error = {
+            'code': code,
+            'message': message
+        }
         return res

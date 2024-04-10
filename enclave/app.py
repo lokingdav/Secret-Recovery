@@ -2,17 +2,20 @@ from enclave.response import EnclaveRes
 from skrecovery.helpers import parse_json, stringify
 from enclave.requests import EnclaveReqType, StoreReq, RetrieveReq, RemoveReq, RecoverReq, VerifyCiphertextReq, TEEReq
 
-def parse_req(req) -> StoreReq | RetrieveReq | RemoveReq | RecoverReq | VerifyCiphertextReq:
-    if req['type'] == EnclaveReqType.STORE.value:
+def parse_req(req: dict) -> StoreReq | RetrieveReq | RemoveReq | RecoverReq | VerifyCiphertextReq:
+    req_type: str = req.get('type', None)
+    if req_type == EnclaveReqType.STORE.value:
         return StoreReq(req)
-    elif req['type'] == EnclaveReqType.RETRIEVE.value:
+    elif req_type == EnclaveReqType.RETRIEVE.value:
         return RetrieveReq(req)
-    elif req['type'] == EnclaveReqType.REMOVE.value:
+    elif req_type == EnclaveReqType.REMOVE.value:
         return RemoveReq(req)
-    elif req['type'] == EnclaveReqType.RECOVER.value:
+    elif req_type == EnclaveReqType.RECOVER.value:
         return RecoverReq(req)
-    elif req['type'] == EnclaveReqType.VERIFY_CIPHERTEXT.value:
+    elif req_type == EnclaveReqType.VERIFY_CIPHERTEXT.value:
         return VerifyCiphertextReq(req)
+    else:
+        raise ValueError(f"Invalid request type: {req_type}")
 
 def run(req: dict | str | bytes) -> dict | str:
     if type(req) == bytes:
@@ -20,7 +23,11 @@ def run(req: dict | str | bytes) -> dict | str:
         
     if type(req) == str:
         req = parse_json(req)
+    
+    try:
+        req: TEEReq = parse_req(req)
+        res: EnclaveRes = req.process_req()
+    except Exception as e:
+        res: EnclaveRes = EnclaveRes.error(code=422, message=str(e))
         
-    req: TEEReq = parse_req(req)
-    res: EnclaveRes = req.process_req()
     return stringify(res.serialize())
