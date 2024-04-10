@@ -1,14 +1,15 @@
 from crypto import sigma, commitment
 from fabric import ledger, window
-from enclave.app import TEE
 from fabric.block import Block
 from skrecovery.party import Party
+from enclave.app import run as TEE
 from skrecovery import helpers, database, config
 from enclave.response import EnclaveRes
 from enclave.requests import EnclaveReqType
 from fabric.transaction import TxType, Signer, Transaction
 from skrecovery.permission import Permission
-from vsock import VsockClient
+import vsock
+import socket
 
 class Server(Party):
     def __init__(self, id: int = 0) -> None:
@@ -256,27 +257,19 @@ class Server(Party):
         res: EnclaveRes = None
         
         if config.USE_VSOCK:
-            client: VsockClient = self.send_to_enclave(req)
-            res: EnclaveRes = self.receive_from_enclave(client)
-            client.disconnect()
+            address = (config.VSOCK_HOST, config.VSOCK_PORT) if config.is_nitro_env() else None
+            connection: socket.socket = vsock.connect(address=address)
+            msg: str = helpers.stringify(req)
+            vsock.send(connection, msg=msg)
+            res: str = vsock.response_recv(connection)
+            vsock.disconnect(connection)
         else: 
-            res: dict = TEE(req)
-            res: EnclaveRes = EnclaveRes.deserialize(res)
+            res: str = TEE(req)
             
+        res: dict = helpers.parse_json(res)
+        res: EnclaveRes = EnclaveRes.deserialize(res)
+        
         return res
-    
-    def send_to_enclave(self, req: dict) -> VsockClient: 
-        client: VsockClient = VsockClient()
-        enclave_endpoint = (config.ENCLAVE_CID, config.ENCLAVE_PORT)
-        client.connect(enclave_endpoint)
-        req: bytes = helpers.stringify(req).encode('utf-8')
-        client.send_data(req)
-        return client
-    
-    def receive_from_enclave(self, client: VsockClient) -> EnclaveRes:
-        res: bytes = client.recv_data()
-        res: dict = helpers.parse_json(bytes(res).decode('utf-8'))
-        return EnclaveRes.deserialize(res)
     
     def setData(self, data: dict):
         super().setData(data)

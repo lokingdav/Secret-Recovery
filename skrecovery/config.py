@@ -34,11 +34,9 @@ ORDER_SERVICE_CONFIG = {
 }
 
 USE_VSOCK = bool(int(env("USE_VSOCK", 1)))
-ENCLAVE_CID = int(env("ENCLAVE_CID", 16))
-ENCLAVE_PORT = int(env("ENCLAVE_PORT", 5005))
+VSOCK_HOST = env("VSOCK_HOST", 16)
+VSOCK_PORT = int(env("VSOCK_PORT", 5005))
+VSOCK_ENV = env('VSOCK_ENV', 'nitro')
 
-SERVER_ENCLAVE_CONFIG = {
-    'USE_VSOCK': USE_VSOCK,
-    'ENCLAVE_CID': ENCLAVE_CID,
-    'ENCLAVE_PORT': ENCLAVE_PORT
-}
+def is_nitro_env():
+    return VSOCK_ENV == 'nitro'

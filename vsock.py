@@ -1,24 +1,23 @@
 import socket, threading
 import enclave.app as enclave
+import skrecovery.config as config
 
-PORT = 5005
 HEADER = 64
 FORMAT = "utf-8"
 BUFFER_SIZE = 2048
 DISCONNECT_MESSAGE = "<<EOT>>"
-SERVER = socket.VMADDR_CID_ANY # socket.gethostbyname(socket.gethostname())
-ADDR = (SERVER, PORT)
-SOCK_FAMILY = socket.AF_VSOCK
-SOCK_TYPE = socket.SOCK_STREAM
+SERVER = socket.VMADDR_CID_ANY if config.is_nitro_env() else socket.gethostbyname(socket.gethostname())
+SOCK_FAMILY = socket.AF_VSOCK if config.is_nitro_env() else socket.AF_INET
+ADDR = (SERVER, config.VSOCK_PORT)
 
 def server_create(address: tuple = None) -> socket.socket:
-    server = socket.socket(SOCK_FAMILY, SOCK_TYPE)
+    server = socket.socket(SOCK_FAMILY, socket.SOCK_STREAM)
     server.bind(address if address else ADDR)
     server.listen()
     return server
 
 def connect(address: tuple = None) -> socket.socket:
-    client: socket.socket = socket.socket(SOCK_FAMILY, SOCK_TYPE)
+    client: socket.socket = socket.socket(SOCK_FAMILY, socket.SOCK_STREAM)
     client.settimeout(5)
     client.connect(address if address else ADDR)
     return client
@@ -64,7 +63,7 @@ def server_handle_client_connection(conn: socket.socket, addr):
     print(f"[CONNECTION CLOSED] {addr} disconnected.")
     
 def server_start(server: socket.socket):
-    print(f"[LISTENING] Server is listening on {SERVER}:{PORT}")
+    print(f"[LISTENING] Server is listening on {SERVER}:{config.VSOCK_PORT}")
     while True:
         conn, addr = server.accept()
         thread = threading.Thread(
