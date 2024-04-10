@@ -39,7 +39,6 @@ def response_recv(conn: socket.socket) -> str:
     msg_length = conn.recv(HEADER).decode(FORMAT)
     if msg_length:
         msg_length = int(msg_length)
-        print('Response length: ', msg_length)
         data = recv_fixed_msg(conn, msg_length)
     return data
 
@@ -78,6 +77,5 @@ def send(conn: socket.socket, msg: str):
     msg_length = len(message)
     send_length = str(msg_length).encode(FORMAT)
     send_length += b" " * (HEADER - len(send_length))
-    
     conn.send(send_length)
     conn.sendall(message)
