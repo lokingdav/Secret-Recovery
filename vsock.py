@@ -4,7 +4,7 @@ import skrecovery.config as config
 
 HEADER = 64
 FORMAT = "utf-8"
-BUFFER_SIZE = 2048
+BUFFER_SIZE = 600 * 1024 * 1024
 DISCONNECT_MESSAGE = "<<EOT>>"
 SERVER = socket.VMADDR_CID_ANY if config.is_nitro_env() else socket.gethostbyname(socket.gethostname())
 SOCK_FAMILY = socket.AF_VSOCK if config.is_nitro_env() else socket.AF_INET
