@@ -3,8 +3,8 @@ from skrecovery.client import Client
 from skrecovery.server import Server
 from enclave.response import EnclaveRes
 from skrecovery.helpers import Benchmark
-from scripts.misc import get_client, get_cloud
-from scripts.store import main as store_script
+from experiments.misc import get_client, get_cloud
+from experiments.store import main as store_script
 
 def main(num_runs, test_name):
     client: Client = get_client()

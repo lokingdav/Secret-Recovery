@@ -3,7 +3,7 @@ from skrecovery.client import Client
 from skrecovery.server import Server
 from enclave.response import EnclaveRes
 from skrecovery.helpers import Benchmark
-from scripts.misc import get_client, get_cloud
+from experiments.misc import get_client, get_cloud
 
 client_secret_info: str = "Dark matter is a proof of God's existence."
 

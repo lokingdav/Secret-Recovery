@@ -13,13 +13,13 @@ Implementation for How to Recover a Cryptographic Secret From the Cloud Paper
 - Run ```python -m fabric.noise_simulation``` to run processes that simulate noise by create random transactions
 
 ## Running the Secret Recovery
-The ```scripts``` folder contains the scripts to run the secret recovery. The scripts are: 
+The ```experiments``` folder contains the scripts to run the secret recovery. The scripts are: 
 - ```store.py```: This script runs the secret recovery store algorithm
 - ```retrieve.py```: This script runs the secret recovery retrieve algorithm
 - ```remove.py```: This script runs the secret recovery remove algorithm
 - ```recover.py```: This script runs the secret recovery recover algorithm
 
-To run the scripts, you can use the following commands: ```python -m scripts.store```, ```python -m scripts.retrieve```, ```python -m scripts.remove```, and ```python -m scripts.recover```
+To run the experiments, you can use the following commands: ```python -m experiments.store```, ```python -m experiments.retrieve```, ```python -m experiments.remove```, and ```python -m experiments.recover```
 
 ## Setup Parent and Enclave
 - Install the AWS CLI and configure it with your credentials

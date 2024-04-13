@@ -1,7 +1,7 @@
 import argparse
 from skrecovery.client import Client
 from skrecovery.server import Server
-from scripts.misc import get_client, get_cloud
+from experiments.misc import get_client, get_cloud
 from skrecovery.helpers import Benchmark
 
 def main(num_runs, test_name):
