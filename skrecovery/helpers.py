@@ -8,7 +8,7 @@ class Benchmark:
         self.filename: str = None
         
         if filename:
-            self.filename = f"benchmarks/{filename.lower()}.csv"
+            self.filename = f"experiments/results/{filename.lower()}.csv"
             create_csv(self.filename, "test,duration_ms")
 
     def start(self):
