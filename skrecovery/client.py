@@ -1,7 +1,7 @@
 from enclave.response import EnclaveRes
 from crypto import sigma, ec_group, ciphers, commitment
 from fabric import ledger
-from skrecovery import database, helpers
+from skrecovery import database, helpers, config
 from skrecovery.party import Party
 from fabric.transaction import TxType, Signer, Transaction
 from skrecovery.permission import PermInfo
@@ -32,8 +32,9 @@ class Client(Party):
         
         # Post registration to ledger
         data = {
-            't_open': 5,
-            't_chal': 5,
+            't_open': config.T_OPEN,
+            't_chal': config.T_CHAL,
+            't_wait': config.T_WAIT,
             'vkc': sigma.stringify(self.vk),
             'vks': sigma.stringify(vks)
         }

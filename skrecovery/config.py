@@ -24,6 +24,9 @@ NUM_ENDORSEMENTS = int(env("NUM_ENDORSEMENTS", 15))
 MAX_TXS_PER_BLOCK = int(env("MAX_TXS_PER_BLOCK", 500))
 PREFERRED_MAX_BLOCK_SIZE_MB = int(env("PREFERRED_MAX_BLOCK_SIZE_MB", 2))
 
+T_OPEN = int(env("T_OPEN", 15)) # 30 seconds
+T_WAIT = int(env("T_CHAL", 302400)) # 1 week but will not be included in permission
+T_CHAL = int(env("T_CHAL", 300)) # 10 minutes
 T_OPEN_BUFFER = int(env("T_OPEN_BUFFER", 1))
 
 ORDER_SERVICE_CONFIG = {
