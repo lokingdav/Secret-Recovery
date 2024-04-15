@@ -28,11 +28,12 @@ class OSLeader(OSNode):
     def __init__(self, index: int):
         super().__init__(index)
         
-    def assemble_transactions(self, pending_txs: list[dict]):
+    def assemble_transactions(self, pending_txs: list[dict], prev_block: Block = None):
         # print(f'Assembling {len(pending_txs)} transactions')
         if not pending_txs:
             raise ValueError('No transactions to assemble')
-        block: Block = Block()
+        
+        block: Block = Block(latest_block=prev_block)
         block.data.reset()
         for tx_dict in pending_txs:
             # print(f'Adding transaction {tx_dict["_id"]} to block')
@@ -47,17 +48,17 @@ class OSLeader(OSNode):
         block.metadata.creator = Signer(self.vk, sig)
         return block
 
-def begin_consensus(pending_txs: list[dict], leader: OSLeader, followers: list[OSNode], save=True):
+def begin_consensus(pending_txs: list[dict], leader: OSLeader, followers: list[OSNode], prev_block: Block = None, save=True):
     if not isinstance(leader, OSLeader):
         raise ValueError('Leader must be an instance of OSLeader')
     
     for follower in followers:
         if not isinstance(follower, OSNode):
             raise ValueError('All followers must be instances of OSNode')
-    
+        
     try:
         # 1. The leader assembles transactions
-        block: Block = leader.assemble_transactions(pending_txs)
+        block: Block = leader.assemble_transactions(pending_txs, prev_block=prev_block)
         block: Block = leader.sign_block(block)
         
         # get random 2F+1 followers
@@ -67,6 +68,8 @@ def begin_consensus(pending_txs: list[dict], leader: OSLeader, followers: list[O
             block = follower.sign_block(block)
             
         # save block to database
+        block.calc_datasize()
+        
         if save:
             block.save()
         
@@ -95,7 +98,7 @@ def get_pending_txs():
         if not size:
             continue
         
-        if total_size_in_kb + size > config.PREFERRED_MAX_BLOCK_SIZE_MB * 1024:
+        if total_size_in_kb + size > config.PREFERRED_MAX_BLOCK_SIZE_KB:
             if len(pending_txs) == 0:
                 pending_txs.append(tx)
             break
@@ -133,6 +136,7 @@ def initialize_genesis_block_if_missing():
     tx.header = TxHeader(TxType.GENESIS.value)
     tx.signature = Signer(sigma.stringify(vk), sigma.sign(sk, tx.data))
     tx.endorse(msp)
+    tx.finalize()
     
     leader, followers = get_orderers()
     begin_consensus(pending_txs=[tx.to_dict()], leader=leader, followers=followers)

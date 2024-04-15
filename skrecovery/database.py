@@ -46,6 +46,12 @@ def get_latest_block():
         block = collection.find_one(sort=[('_id', -1)])
     return block
 
+def delete_blocks_after(number: int):
+    with open_db() as connection:
+        db = connection[config.DB_NAME]
+        collection = db['ledgers']
+        collection.delete_many({'_id': {'$gt': number}})
+
 def find_block_by_number(number: int):
     block: dict = None
     with open_db() as connection:
@@ -180,3 +186,6 @@ def find_block_by_filters(filters: dict):
         collection = db['ledgers']
         block = collection.find_one(filters)
     return block
+
+def insert_wait_window(blocks: list[dict]):
+    return insert('wait_window', blocks)

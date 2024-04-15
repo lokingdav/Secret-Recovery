@@ -5,7 +5,7 @@ from fabric.transaction import Transaction, TxHeader, Signer, TxType
 
 msp: MSP = None
 
-def post(txType: str, data: dict, signature: Signer):
+def post(txType: str, data: dict, signature: Signer, send_tos: bool = True) -> Transaction:
     if type(txType) != str:
         raise ValueError('Invalid transaction type')
     if type(data) != dict:
@@ -21,7 +21,10 @@ def post(txType: str, data: dict, signature: Signer):
     tx.header = TxHeader(txType)
     tx.signature = signature
     tx.endorse(msp)
-    tx.send_to_ordering_service()
+    tx.finalize()
+    
+    if (send_tos):
+        tx.send_to_ordering_service()
     
     return tx
 

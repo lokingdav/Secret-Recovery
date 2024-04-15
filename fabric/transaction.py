@@ -81,6 +81,8 @@ class Transaction:
         self.data: dict = None
         self.response: dict = None
         self.signature: Signer = None
+        self.created_at: datetime.datetime = None
+        self.size_in_kb: float = None
         self.endorsements: list[Endorsement] = []
     
     def get_id(self):
@@ -96,11 +98,13 @@ class Transaction:
             endorsement = Endorsement(self.data)
             endorsement.sign(keys['sk'], keys['vk'])
             self.endorsements.append(endorsement)
-            
+    
+    def finalize(self):
+        self.created_at = datetime.datetime.now()
+        self.size_in_kb = round(self.size_in_bytes() / 1024, 3)
+        
     def send_to_ordering_service(self):
-        data = self.to_dict()
-        data['created_at'] = datetime.datetime.now()
-        data['size_in_kb'] = round(self.size_in_bytes() / 1024, 3)
+        data: dict = self.to_dict()
         database.insert_pending_txs(records=[data])
         
     def get_block(self) -> dict:
@@ -113,7 +117,8 @@ class Transaction:
         return self.size_in_bytes()
     
     def to_string(self):
-        return helpers.stringify(self.to_dict())
+        data = self.to_dict()
+        return helpers.stringify(data)
     
     def to_dict(self):
         header = self.header.to_dict()
@@ -125,7 +130,9 @@ class Transaction:
             'data': self.data,
             'response': self.response,
             'signature': signature,
-            'endorsements': endorsements
+            'endorsements': endorsements,
+            'created_at': self.created_at.isoformat(),
+            'size_in_kb': self.size_in_kb
         }
         
     @staticmethod
@@ -136,4 +143,6 @@ class Transaction:
         instance.response = data['response']
         instance.signature = Signer.from_dict(data['signature'])
         instance.endorsements = [Endorsement.from_dict(e) for e in data['endorsements']]
+        instance.created_at = datetime.datetime.fromisoformat(data['created_at'])
+        instance.size_in_kb = data['size_in_kb']
         return instance

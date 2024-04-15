@@ -6,14 +6,14 @@ import time, random, argparse, multiprocessing, sys, base64
 
 num_processes = 1
 
-def post_fake_tx():
+def post_fake_tx(send_tos: bool = True):
     sk, vk = sigma.keygen()
     size = random.randint(1, 10 * 1024) # random size between 1B and 10KB
     data: dict = {'fake': base64.b64encode(helpers.random_bytes(size)).decode()}
     vk_str: str = sigma.stringify(vk)
     signature: sigma.Signature = sigma.sign(sk, data)
     tx_signature: Signer = Signer(vk_str, signature)
-    tx: Transaction = ledger.post(TxType.FAKE.value, data, tx_signature)
+    tx: Transaction = ledger.post(TxType.FAKE.value, data, tx_signature, send_tos=send_tos)
     return tx
 
 def sleep_random():

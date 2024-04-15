@@ -1,26 +1,38 @@
-import argparse
+import argparse, time
 from skrecovery.client import Client
 from skrecovery.server import Server
 from skrecovery.helpers import Benchmark
 from experiments.misc import get_client, get_cloud
 from experiments.store import main as store_script, client_secret_info
+import experiments.sim_blockchain as sim_blockchain
+import skrecovery.database as database
 
 def main(num_runs, test_name):
     client: Client = get_client()
     cloud: Server = get_cloud()
+    
+    sim_blockchain.init()
     
     client_bm: Benchmark = Benchmark('client', test_name)
     cloud_bm: Benchmark = Benchmark('cloud', test_name)
     enclave_bm: Benchmark = Benchmark('enclave', test_name)
     
     # Just to be sure the store protocol was executed
-    store_script(num_runs=1) 
+    # store_script(num_runs=1) 
         
     for i in range(num_runs):
         # Client part 1: Initiate recover request
         client_bm.reset().start()
-        recover_req, client_wait_time = client.init_recover()
-        client_bm.pause().add_entry(-1 * client_wait_time)
+        recover_req = client.init_recover()
+        client_bm.pause()
+        
+        sim_blockchain.simulate(
+            tx_com=recover_req['tx_com'],
+            tx_open=recover_req['tx_open'],
+            t_open=client.perm_info.t_open,
+            t_chal=client.perm_info.t_chal,
+            t_wait=client.perm_info.t_wait
+        )
         
         # Cloud part 1: Process recover request
         cloud_bm.reset().start()
@@ -48,6 +60,8 @@ def main(num_runs, test_name):
         client_bm.save().reset()
         cloud_bm.save().reset()
         enclave_bm.save().reset()
+        
+        sim_blockchain.clean()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Recover script')

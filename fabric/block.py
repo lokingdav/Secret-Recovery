@@ -85,10 +85,10 @@ class BlockMetaData:
         return metadata
         
 class Block:
-    def __init__(self, init=True) -> None:
+    def __init__(self, init=True, latest_block: dict = None) -> None:
         if init:
             self.header = BlockHeader()
-            latest_block: dict = database.get_latest_block()
+            latest_block: dict = latest_block if latest_block else database.get_latest_block()
             self.header.update_from_last_block(latest_block)
             self.data = BlockData()
             self.metadata = BlockMetaData()

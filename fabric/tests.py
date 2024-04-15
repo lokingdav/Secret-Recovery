@@ -26,7 +26,7 @@ def test_tx_serialization():
     assert tx1str == tx2str
     
 def test_block_serialization():
-    block: Block = Block()
+    block: Block = Block(init=False)
     tx = create_tx()
     block.data.add_tx(tx.to_string())
     block.metadata.bitmap = {'hello': 'world'}

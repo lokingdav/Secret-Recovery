@@ -130,15 +130,19 @@ class Client(Party):
         
     def init_recover(self) -> tuple[dict, float]:
         self.rsakeys: ciphers.RSAKeyPair = ciphers.rsa_keygen()
+        
         req: dict = {
             'action': 'recover',
             'pk': self.rsakeys.export_pubkey().hex(),
         }
-        tx_open, wait_time = self.generate_permission(req)
+        
+        tx_com, tx_open = self.generate_permission(req)
+        
         return {
-            'tx_open_id': tx_open.get_id(), 
+            'tx_com': tx_com.to_dict(), 
+            'tx_open': tx_open.to_dict(),
             'regtx_id': self.regtx_id
-        }, wait_time
+        }
     
     def generate_permission(self, req: dict) -> tuple[Transaction, float]:
         msg: dict = {
@@ -153,18 +157,18 @@ class Client(Party):
         
         tx_com: Transaction = self.post_commitment(com)
         
-        wait_time: float = ledger.wait_for_tx(tx_id=tx_com.get_id(), name='commitment')
         tx_open: Transaction = self.post_opening(
             key=com_key, 
             message=msg,
             tx_com=tx_com.get_id()
         )
-        return tx_open, wait_time
+        
+        return tx_com, tx_open
             
     def post_commitment(self, com: str):
         data: dict = {'com': com, 'perm_info': self.perm_info.to_dict()}
         signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data))
-        return ledger.post(TxType.COMMITMENT.value, data, signer)
+        return ledger.post(TxType.COMMITMENT.value, data, signer, send_tos=False)
     
     def post_opening(self, key: str, message: dict, tx_com: str):
         data: dict = {
@@ -173,7 +177,7 @@ class Client(Party):
             'tx_com': tx_com,
         }
         signer: Signer = Signer(creator=self.vk, signature=sigma.sign(self.sk, data))
-        return ledger.post(TxType.OPENING.value, data, signer)
+        return ledger.post(TxType.OPENING.value, data, signer, send_tos=False)
             
     def respond_to_tx_open(self, tx_open: Transaction, action: str):
         data: dict = {

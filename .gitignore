@@ -162,3 +162,4 @@ cython_debug/
 ./fabric-keys.json
 benchmarks/tests.csv
 *.eif
+*.pkl

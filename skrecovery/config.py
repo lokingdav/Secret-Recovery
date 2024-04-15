@@ -22,7 +22,7 @@ NUM_PEERS = int(env("NUM_PEERS", 25))
 NUM_ORDERERS = int(env("NUM_ORDERERS", 7))
 NUM_ENDORSEMENTS = int(env("NUM_ENDORSEMENTS", 15))
 MAX_TXS_PER_BLOCK = int(env("MAX_TXS_PER_BLOCK", 500))
-PREFERRED_MAX_BLOCK_SIZE_MB = int(env("PREFERRED_MAX_BLOCK_SIZE_MB", 2))
+PREFERRED_MAX_BLOCK_SIZE_KB = int(env("PREFERRED_MAX_BLOCK_SIZE_KB", 2 * 1024))
 
 T_OPEN = int(env("T_OPEN", 15)) # 30 seconds
 T_WAIT = int(env("T_CHAL", 302400)) # 1 week but will not be included in permission
