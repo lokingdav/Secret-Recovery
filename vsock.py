@@ -18,7 +18,7 @@ def server_create(address: tuple = None) -> socket.socket:
 
 def connect(address: tuple = None) -> socket.socket:
     client: socket.socket = socket.socket(SOCK_FAMILY, socket.SOCK_STREAM)
-    client.settimeout(5)
+    client.settimeout(60 * 5)
     client.connect(address if address else ADDR)
     return client
 

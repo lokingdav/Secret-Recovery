@@ -172,8 +172,7 @@ class Server(Party):
                 'end': chal_window_req[-1].get_number()
             },
         }
-        import json
-        print("Permission data", json.dumps(data, indent=2))
+        
         creator: Signer = Signer(self.vk, sigma.sign(self.sk, data))
         ledger.post(TxType.PERMISSION.value, data, creator)
         
@@ -273,7 +272,7 @@ class Server(Party):
             address = (config.VSOCK_HOST, config.VSOCK_PORT) if config.is_nitro_env() else None
             connection: socket.socket = vsock.connect(address=address)
             msg: str = helpers.stringify(req)
-            print("Datasize to send:", len(msg.encode()) / (1024 * 1024), "MB")
+            print("Datasize to send:", round(len(msg.encode()) / (1024 * 1024), 2), "MB")
             vsock.send(connection, msg=msg)
             res: str = vsock.response_recv(connection)
             vsock.disconnect(connection)

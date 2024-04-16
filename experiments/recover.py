@@ -2,6 +2,7 @@ import argparse, pickle
 from skrecovery.client import Client
 from skrecovery.server import Server
 from skrecovery.helpers import Benchmark
+from enclave.response import EnclaveRes
 from experiments.misc import get_client, get_cloud
 from experiments.store import main as store_script, client_secret_info
 import experiments.sim_blockchain as sim_blockchain
@@ -56,8 +57,8 @@ def main(num_runs, test_name):
         
         # Cloud part 1: Process recover request
         cloud_bm.reset().start()
-        res, cloud_wait_time = cloud.process_recover(recover_req=recover_req)
-        cloud_bm.end().add_entry(-1 * cloud_wait_time)
+        res: EnclaveRes = cloud.process_recover(recover_req=recover_req)
+        cloud_bm.end()
         enclave_bm.add_entry(res.time_taken)
         
         if res.error is not None:

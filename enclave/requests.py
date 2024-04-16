@@ -136,6 +136,7 @@ class RecoverReq(TEEReq):
         if req['type'] != EnclaveReqType.RECOVER.value:
             raise Exception("Invalid request type")
         
+        print("Setting up recover request")
         self.ctx: str = req['params']['ctx']
         self.req: dict = req['params']['req']
         self.perm: Permission = Permission.from_dict(req['params']['perm'])
@@ -149,17 +150,21 @@ class RecoverReq(TEEReq):
         res.req_type = EnclaveReqType.RECOVER.value
         
         try:
+            print("Verifying recover request")
             req: dict = { 'action': 'recover', 'pk': self.pk}
             valid_req: bool = helpers.stringify(req) == helpers.stringify(self.req)
             if  valid_req is False:
                 raise Exception("Invalid permissions")
             
+            print("Verifying permissions")
             self.verify_perm() # raise exception if invalid permissions
             
+            print("Decrypting ciphertext")
             ctx: ciphers.AESCtx = ciphers.AESCtx.from_string(self.ctx)
             plaintext: bytes = ciphers.aes_dec(self.retK, ctx)
             plaintext: dict = helpers.parse_json(plaintext.decode('utf-8'))
             
+            print("Checking permissions")
             perm_info_matched: bool = helpers.stringify(plaintext['perm_info']) == helpers.stringify(self.perm_info.to_dict())
             other_check: bool = plaintext['req'] is None and plaintext['res'] is None and plaintext['perm'] is None
             if not perm_info_matched or not other_check:
@@ -171,13 +176,15 @@ class RecoverReq(TEEReq):
                 'perm': self.perm.to_dict(),
                 'req': self.req,
             }
+            print("Encrypting data with client's public key")
             pk = ciphers.RSAKeyPair.import_key(bytes.fromhex(self.pk))
             ctx: ciphers.RSACtx = ciphers.rsa_enc(pk, data=data)
             res.payload = {'ctx_fin': ctx.to_string()}
         except Exception as e:
             traceback.print_exc()
             res.error = str(e)
-            
+        
+        print("Finishing recover request")
         res.time_taken = self.benchmark.end().total(short=False)
         return res
         
@@ -185,6 +192,8 @@ class RecoverReq(TEEReq):
         perm_info_str: str = helpers.stringify(self.perm.client_regtx.data)
         perm_info_prime: str = helpers.stringify(self.perm.open_tx.data['message']['perm_info'])
         if perm_info_str != perm_info_prime:
+            print("perm_info_str: ", perm_info_str)
+            print("perm_info_prime: ", perm_info_prime)
             raise Exception("Invalid permissions: perm_info_str != perm_info_prime")
         
         req_str: str = helpers.stringify(self.req)
