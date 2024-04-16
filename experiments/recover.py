@@ -7,7 +7,7 @@ from experiments.misc import get_client, get_cloud
 from experiments.store import main as store_script, client_secret_info
 import experiments.sim_blockchain as sim_blockchain
 import skrecovery.database as database
-import os
+import os, traceback
 
 def init_recover(client: Client, cache: bool = False) -> dict:
     if not cache:
@@ -42,48 +42,51 @@ def main(num_runs, test_name):
     store_script(num_runs=1) 
         
     for i in range(num_runs):
-        # Client part 1: Initiate recover request
-        client_bm.reset().start()
-        recover_req = init_recover(client, cache=False)
-        client_bm.pause()
-        
-        sim_blockchain.simulate(
-            tx_com=recover_req['tx_com'],
-            tx_open=recover_req['tx_open'],
-            t_open=client.perm_info.t_open,
-            t_chal=client.perm_info.t_chal,
-            t_wait=client.perm_info.t_wait,
-            cache=False
-        )
-        
-        # Cloud part 1: Process recover request
-        cloud_bm.reset().start()
-        res: EnclaveRes = cloud.process_recover(recover_req=recover_req)
-        cloud_bm.end()
-        enclave_bm.add_entry(res.time_taken)
-        
-        if res.error is not None:
-            raise Exception(res.error)
-        
-        # Client part 2: Verify response
-        client_bm.resume()
-        recovered_secret: str = client.complete_recover(res)
-        client_bm.end()
-        
-        assert recovered_secret == client_secret_info
-        print('Recovered secret:', recovered_secret)
-        
-        print(f'\nBenchmarks for run {i+1}')
-        print('client:', client_bm.entries, client_bm.total())
-        print('cloud:', cloud_bm.entries, cloud_bm.total())
-        print('enclave:', enclave_bm.entries, enclave_bm.total())
-        print('\n')
-        
-        client_bm.save().reset()
-        cloud_bm.save().reset()
-        enclave_bm.save().reset()
-        
-        sim_blockchain.clean()
+        try:
+            # Client part 1: Initiate recover request
+            client_bm.reset().start()
+            recover_req = init_recover(client, cache=False)
+            client_bm.pause()
+            
+            sim_blockchain.simulate(
+                tx_com=recover_req['tx_com'],
+                tx_open=recover_req['tx_open'],
+                t_open=client.perm_info.t_open,
+                t_chal=client.perm_info.t_chal,
+                t_wait=client.perm_info.t_wait,
+                cache=False
+            )
+            
+            # Cloud part 1: Process recover request
+            cloud_bm.reset().start()
+            res: EnclaveRes = cloud.process_recover(recover_req=recover_req)
+            cloud_bm.end()
+            enclave_bm.add_entry(res.time_taken)
+            
+            if res.error is not None:
+                raise Exception(res.error)
+            
+            # Client part 2: Verify response
+            client_bm.resume()
+            recovered_secret: str = client.complete_recover(res)
+            client_bm.end()
+            
+            assert recovered_secret == client_secret_info
+            print('Recovered secret:', recovered_secret)
+            
+            print(f'\nBenchmarks for run {i+1}')
+            print('client:', client_bm.entries, client_bm.total())
+            print('cloud:', cloud_bm.entries, cloud_bm.total())
+            print('enclave:', enclave_bm.entries, enclave_bm.total())
+            print('\n')
+            
+            client_bm.save().reset()
+            cloud_bm.save().reset()
+            enclave_bm.save().reset()
+        except Exception as ex:
+            sim_blockchain.clean()
+            traceback.print_exc()
+            raise ex
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Recover script')
