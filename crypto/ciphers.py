@@ -31,7 +31,7 @@ class RSAKeyPair:
     def import_key(key: bytes):
         return RSA.import_key(key)
 
-def aes_enc(key: bytes, data: bytes | str) -> AESCtx:
+def aes_enc(key: bytes, data: bytes | str, chunk_size: int = 1024) -> AESCtx:
     if type(data) == dict:
         data = helpers.stringify(data)
         
@@ -40,20 +40,40 @@ def aes_enc(key: bytes, data: bytes | str) -> AESCtx:
         
     cipher = AES.new(key, AES.MODE_EAX)
     nonce = cipher.nonce
-    ctx, mac = cipher.encrypt_and_digest(data)
-    return AESCtx(nonce, ctx, mac)
+    
+    ctx = bytearray()
 
-def aes_dec(key: bytes, ctx: AESCtx) -> bytes:
+    # Encrypt data in chunks
+    index = 0
+    while index < len(data):
+        chunk = data[index:index+chunk_size]
+        ctx.extend(cipher.encrypt(chunk))
+        index += chunk_size
+    
+    mac = cipher.digest()
+    
+    return AESCtx(nonce, bytes(ctx), mac)
+
+def aes_dec(key: bytes, ctx: AESCtx, chunk_size: int = 1024) -> bytes:
     if key is None:
         raise Exception("decryption key must be a valid key")
     if ctx is None or not isinstance(ctx, AESCtx):
         raise Exception("ctx must be a valid AESCtx")
     
     cipher = AES.new(key, AES.MODE_EAX, nonce=ctx.nonce)
-    plaintext = cipher.decrypt(ctx.ctx)
+    plaintext = bytearray()
+
+    # Decrypt data in chunks
+    index = 0
+    data = ctx.ctx
+    while index < len(data):
+        chunk = data[index:index+chunk_size]
+        plaintext.extend(cipher.decrypt(chunk))
+        index += chunk_size
+
     cipher.verify(ctx.mac)
     
-    return plaintext
+    return bytes(plaintext)
 
 class RSACtx:
     def __init__(self, session_ctx: bytes, aes_ctx: AESCtx):
