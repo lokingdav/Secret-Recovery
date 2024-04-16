@@ -123,9 +123,10 @@ class Server(Party):
         return data['ctx']
     
     def process_recover(self, recover_req: dict) -> tuple[EnclaveRes, float]:
-        wait_time: float = ledger.wait_for_tx(tx_id=recover_req['tx_open_id'], name='opening')
-        tx_open: Transaction = ledger.find_transaction_by_id(recover_req['tx_open_id'])
-        
+        print("tx_open_id", recover_req['tx_open']['_id'])
+        print("tx_com_id", recover_req['tx_com']['_id'])
+        tx_open: Transaction = ledger.find_transaction_by_id(recover_req['tx_open']['_id'])
+        print("tx_open", tx_open)
         chal_window_c: list[Block] = self.get_chal_window_c(recover_req['regtx_id'], tx_open)
         chal_window_c = self.verify_registration_tx(chal_window_c)
         
@@ -134,6 +135,7 @@ class Server(Party):
             raise Exception("Invalid commitment")
         
         chal_window_req: list[Block] = self.get_chal_window_req(tx_open)
+        print('chal_window_req:', len(chal_window_req))
         if not self.verify_permission_request(
             tx_open=tx_open,
             chal_window_req=chal_window_req,
@@ -170,6 +172,8 @@ class Server(Party):
                 'end': chal_window_req[-1].get_number()
             },
         }
+        import json
+        print("Permission data", json.dumps(data, indent=2))
         creator: Signer = Signer(self.vk, sigma.sign(self.sk, data))
         ledger.post(TxType.PERMISSION.value, data, creator)
         
@@ -188,7 +192,7 @@ class Server(Party):
             }
         }
         
-        return self.enclave_socket(enclave_req), wait_time
+        return self.enclave_socket(enclave_req)
         
     def verify_registration_tx(self, chal_window_c: list[Block]) -> list[Block]:
         return chal_window_c # optional implementation
@@ -242,15 +246,24 @@ class Server(Party):
     def get_com_window_req(self, tx_open: Transaction) -> list[Block]:
         t_open: int = tx_open.data['message']['perm_info']['t_open']
         block_containing_tx_open: Block = ledger.find_block_by_transaction_id(tx_open.get_id())
+        print('block_containing_tx_open:', block_containing_tx_open.get_number())
         start = block_containing_tx_open.get_number() - t_open # t_open blocks before the block containing tx_open
         end = block_containing_tx_open.get_number() + config.T_OPEN_BUFFER # buffer blocks after tx_open
+        print('com window req start:', start)
+        print('com window req end:', end)
+        print('diff:', end - start)
         return ledger.get_blocks_in_range(start_number=start, end_number=end)
     
     def get_chal_window_req(self, tx_open: Transaction) -> list[Block]:
         t_chal: int = tx_open.data['message']['perm_info']['t_chal']
+        t_wait: int = tx_open.data['message']['perm_info']['t_wait']
         block_containing_tx_open: Block = ledger.find_block_by_transaction_id(tx_open.get_id())
-        start = block_containing_tx_open.get_number() # Start at the block containing tx_open
+        print("block_containing_tx_open:", block_containing_tx_open.get_number())
+        start = block_containing_tx_open.get_number() + t_wait + 1 # Start at the next block after t_wait blocks after block containing tx_open
+        print('chal window req start:', start)
         end = start + t_chal # t_chal blocks after tx_open
+        print('chal window req end:', end)
+        print('diff:', end - start)
         return ledger.get_blocks_in_range(start_number=start, end_number=end)
     
     def enclave_socket(self, req: dict) -> EnclaveRes:
@@ -260,6 +273,7 @@ class Server(Party):
             address = (config.VSOCK_HOST, config.VSOCK_PORT) if config.is_nitro_env() else None
             connection: socket.socket = vsock.connect(address=address)
             msg: str = helpers.stringify(req)
+            print("Datasize to send:", len(msg.encode()) / (1024 * 1024), "MB")
             vsock.send(connection, msg=msg)
             res: str = vsock.response_recv(connection)
             vsock.disconnect(connection)

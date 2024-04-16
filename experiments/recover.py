@@ -1,4 +1,4 @@
-import argparse, time
+import argparse, pickle
 from skrecovery.client import Client
 from skrecovery.server import Server
 from skrecovery.helpers import Benchmark
@@ -6,6 +6,26 @@ from experiments.misc import get_client, get_cloud
 from experiments.store import main as store_script, client_secret_info
 import experiments.sim_blockchain as sim_blockchain
 import skrecovery.database as database
+import os
+
+def init_recover(client: Client, cache: bool = False) -> dict:
+    if not cache:
+        return client.init_recover()
+    
+    filename = 'tmp/recover_req.pkl'
+    if not os.path.exists(filename):
+        recover_req = client.init_recover()
+        with open(filename, 'wb') as f:
+            pickle.dump(recover_req, f)
+    else:
+        try:
+            with open(filename, 'rb') as f:
+                recover_req = pickle.load(f)
+        except EOFError:
+            recover_req = client.init_recover()
+            with open(filename, 'wb') as f:
+                pickle.dump(recover_req, f)
+    return recover_req
 
 def main(num_runs, test_name):
     client: Client = get_client()
@@ -23,7 +43,7 @@ def main(num_runs, test_name):
     for i in range(num_runs):
         # Client part 1: Initiate recover request
         client_bm.reset().start()
-        recover_req = client.init_recover()
+        recover_req = init_recover(client, cache=True)
         client_bm.pause()
         
         sim_blockchain.simulate(

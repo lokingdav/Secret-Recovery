@@ -129,6 +129,7 @@ class Client(Party):
         return plaintext['data']
         
     def init_recover(self) -> tuple[dict, float]:
+        print("Initiating recover request")
         self.rsakeys: ciphers.RSAKeyPair = ciphers.rsa_keygen()
         
         req: dict = {

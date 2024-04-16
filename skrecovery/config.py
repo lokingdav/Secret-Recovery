@@ -27,7 +27,7 @@ PREFERRED_MAX_BLOCK_SIZE_KB = int(env("PREFERRED_MAX_BLOCK_SIZE_KB", 2 * 1024))
 T_OPEN = int(env("T_OPEN", 15)) # 30 seconds
 T_WAIT = int(env("T_CHAL", 302400)) # 1 week but will not be included in permission
 T_CHAL = int(env("T_CHAL", 300)) # 10 minutes
-T_OPEN_BUFFER = int(env("T_OPEN_BUFFER", 1))
+T_OPEN_BUFFER = int(env("T_OPEN_BUFFER", 0))
 
 ORDER_SERVICE_CONFIG = {
     "NUM_FAULTS": NUM_FAULTS,
