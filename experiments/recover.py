@@ -44,7 +44,7 @@ def main(num_runs, test_name):
     for i in range(num_runs):
         # Client part 1: Initiate recover request
         client_bm.reset().start()
-        recover_req = init_recover(client, cache=True)
+        recover_req = init_recover(client, cache=False)
         client_bm.pause()
         
         sim_blockchain.simulate(
@@ -52,7 +52,8 @@ def main(num_runs, test_name):
             tx_open=recover_req['tx_open'],
             t_open=client.perm_info.t_open,
             t_chal=client.perm_info.t_chal,
-            t_wait=client.perm_info.t_wait
+            t_wait=client.perm_info.t_wait,
+            cache=False
         )
         
         # Cloud part 1: Process recover request

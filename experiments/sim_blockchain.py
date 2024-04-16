@@ -23,7 +23,7 @@ def init():
     try:
         with open('tmp/seeded_blks.pkl', 'rb') as f:
             BLK_SEEDS = pickle.load(f)
-    except EOFError:
+    except Exception:
         print("Pickle file is empty or corrupted. Creating new seeded blocks.")
         BLK_SEEDS = []
         
@@ -106,13 +106,13 @@ def create_blocks_for_challenge_window(leader, followers, prev_block, t_chal):
         print(f"\rChallenge window: Created block {i+1}/{t_chal}", end='')
     return blocks, prev_block
 
-def simulate(tx_com: dict, tx_open: dict, t_open: int, t_chal: int, t_wait: int) -> list[dict]:
+def simulate(tx_com: dict, tx_open: dict, t_open: int, t_chal: int, t_wait: int, cache: bool = True) -> list[dict]:
     global START_BLK_ID
     
     if not isinstance(tx_com, dict) or not isinstance(tx_open, dict):
         raise Exception('tx_com and tx_open must be dictionaries.')
     
-    if ledger.find_transaction_by_id(tx_open['_id']):
+    if cache and ledger.find_transaction_by_id(tx_open['_id']):
         return
     
     print("Simulating blockchain for challenge window")
