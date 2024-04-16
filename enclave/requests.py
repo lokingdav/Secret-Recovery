@@ -176,6 +176,9 @@ class RecoverReq(TEEReq):
                 'perm': self.perm.to_dict(),
                 'req': self.req,
             }
+            
+            del self.perm
+            
             print("Encrypting data with client's public key")
             pk = ciphers.RSAKeyPair.import_key(bytes.fromhex(self.pk))
             ctx: ciphers.RSACtx = ciphers.rsa_enc(pk, data=data)

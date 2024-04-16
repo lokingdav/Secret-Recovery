@@ -1,3 +1,4 @@
+import psutil
 from skrecovery import helpers
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
@@ -49,6 +50,7 @@ def aes_enc(key: bytes, data: bytes | str, chunk_size: int = 1024) -> AESCtx:
         chunk = data[index:index+chunk_size]
         ctx.extend(cipher.encrypt(chunk))
         index += chunk_size
+        print(f"Mem after chunk {index}", psutil.virtual_memory()) 
     
     mac = cipher.digest()
     
