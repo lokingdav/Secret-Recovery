@@ -39,7 +39,7 @@ def main(num_runs, test_name):
     enclave_bm: Benchmark = Benchmark('enclave', test_name)
     
     # Just to be sure the store protocol was executed
-    # store_script(num_runs=1) 
+    store_script(num_runs=1) 
         
     for i in range(num_runs):
         # Client part 1: Initiate recover request
