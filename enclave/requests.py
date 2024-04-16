@@ -226,7 +226,8 @@ class RecoverReq(TEEReq):
     def check_com_opening(self):
         block, tx_com = blockchain.find_commitment_for_opening(
             window=self.perm.com_window_req, 
-            tx_open=self.perm.open_tx
+            tx_open=self.perm.open_tx,
+            tx_open_block_number=self.perm.tx_open_block_number
         )
         if not tx_com or not block:
             raise Exception("Invalid permissions: tx_com or block")
@@ -258,7 +259,8 @@ class RecoverReq(TEEReq):
         for block, tx_open_prime in blocks:
             block_com, tx_com = blockchain.find_commitment_for_opening(
                 window=self.perm.com_window_req,
-                tx_open=tx_open_prime
+                tx_open=tx_open_prime,
+                tx_open_block_number=block.get_number()
             )
             if not block_com:
                 continue

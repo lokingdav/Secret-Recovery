@@ -1,13 +1,11 @@
 from fabric.block import Block
 from fabric.transaction import TxType, Transaction
 
-def find_commitment_for_opening(window: list[Block], tx_open: Transaction) -> tuple[Block, Transaction]:
-    block_open: dict = tx_open.get_block()
-    block_open: Block = Block.from_dict(block_open)
+def find_commitment_for_opening(window: list[Block], tx_open: Transaction, tx_open_block_number: int) -> tuple[Block, Transaction]:
     perm_info: dict = tx_open.data['message']['perm_info']
     
     for block in window:
-        if block.get_number() > block_open.get_number():
+        if block.get_number() > tx_open_block_number:
             continue
         for tx in block.data.transactions:
             if tx.get_type() == TxType.COMMITMENT.value:

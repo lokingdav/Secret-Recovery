@@ -38,6 +38,7 @@ class Permission:
         self.chal_window_c: list[Block] = []
         self.com_window_req: list[Block] = []
         self.chal_window_req: list[Block] = []
+        self.tx_open_block_number: int = None
         
     def to_dict(self) -> dict:
         return {
@@ -45,6 +46,7 @@ class Permission:
             'tx_reg': self.tx_reg.to_dict(),
             'server_regtx': self.server_regtx.to_dict(),
             'client_regtx': self.client_regtx.to_dict(),
+            'tx_open_block_number': self.tx_open_block_number,
             'chal_window_c': [block.to_dict() for block in self.chal_window_c],
             'com_window_req': [block.to_dict() for block in self.com_window_req],
             'chal_window_req': [block.to_dict() for block in self.chal_window_req]
@@ -57,6 +59,7 @@ class Permission:
         perm.tx_reg = Transaction.from_dict(data['tx_reg'])
         perm.server_regtx = Transaction.from_dict(data['server_regtx'])
         perm.client_regtx = Transaction.from_dict(data['client_regtx'])
+        perm.tx_open_block_number = int(data['tx_open_block_number'])
         perm.chal_window_c = [Block.from_dict(block) for block in data['chal_window_c']]
         perm.com_window_req = [Block.from_dict(block) for block in data['com_window_req']]
         perm.chal_window_req = [Block.from_dict(block) for block in data['chal_window_req']]

@@ -154,6 +154,7 @@ class Server(Party):
         permission.chal_window_c = chal_window_c
         permission.com_window_req = com_window_req
         permission.chal_window_req = chal_window_req
+        permission.tx_open_block_number = tx_open.get_block().get('_id')
         
         # Post to ledger
         data = {
@@ -199,7 +200,8 @@ class Server(Party):
     def verify_commitment_tx(self, tx_open: Transaction, com_window_req: list[Block]) -> bool:
         block_com, tx_com = window.find_commitment_for_opening(
             window=com_window_req,
-            tx_open=tx_open
+            tx_open=tx_open,
+            tx_open_block_number=tx_open.get_block().get('_id')
         )
         if not block_com or not tx_com:
             return False
@@ -218,7 +220,8 @@ class Server(Party):
         for block, tx_open_prime in blocks:
             block_com, tx_com = window.find_commitment_for_opening(
                 window=com_window_req,
-                tx_open=tx_open_prime
+                tx_open=tx_open_prime,
+                tx_open_block_number=block.get_number()
             )
             if not block_com:
                 continue
