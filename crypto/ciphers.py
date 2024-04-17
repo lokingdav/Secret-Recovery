@@ -4,6 +4,8 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Random import get_random_bytes
 
+chunk_size: int = 100 * 1024 * 1024
+
 class AESCtx:
     def __init__(self, nonce: bytes, ctx: bytes, mac: bytes):
         self.nonce = nonce
@@ -32,7 +34,7 @@ class RSAKeyPair:
     def import_key(key: bytes):
         return RSA.import_key(key)
 
-def aes_enc(key: bytes, data: bytes | str, chunk_size: int = 1024) -> AESCtx:
+def aes_enc(key: bytes, data: bytes | str) -> AESCtx:
     if type(data) == dict:
         data = helpers.stringify(data)
         
@@ -56,7 +58,7 @@ def aes_enc(key: bytes, data: bytes | str, chunk_size: int = 1024) -> AESCtx:
     
     return AESCtx(nonce, bytes(ctx), mac)
 
-def aes_dec(key: bytes, ctx: AESCtx, chunk_size: int = 1024) -> bytes:
+def aes_dec(key: bytes, ctx: AESCtx) -> bytes:
     if key is None:
         raise Exception("decryption key must be a valid key")
     if ctx is None or not isinstance(ctx, AESCtx):
