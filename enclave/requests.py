@@ -170,14 +170,13 @@ class RecoverReq(TEEReq):
             if not perm_info_matched or not other_check:
                 raise Exception("Invalid permissions")
             
+            del self.perm
+            
             data: dict = {
                 'data': plaintext['data'].decode('utf-8') if isinstance(plaintext['data'], bytes) else plaintext['data'],
                 'perm_info': self.perm_info.to_dict(),
-                'perm': self.perm.to_dict(),
-                'req': self.req,
             }
             
-            del self.perm
             
             print("Encrypting data with client's public key")
             pk = ciphers.RSAKeyPair.import_key(bytes.fromhex(self.pk))
