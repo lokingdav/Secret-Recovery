@@ -52,7 +52,6 @@ def aes_enc(key: bytes, data: bytes | str) -> AESCtx:
         chunk = data[index:index+chunk_size]
         ctx.extend(cipher.encrypt(chunk))
         index += chunk_size
-        print(f"Mem after chunk {index}", psutil.virtual_memory()) 
     
     mac = cipher.digest()
     

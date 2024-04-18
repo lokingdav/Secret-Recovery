@@ -5,6 +5,7 @@ fe25519==1.5.0
 ge25519==1.5.1
 oblivious==7.0.0
 parts==1.7.0
+psutil==5.9.8
 pycryptodome==3.20.0
 pymongo==4.6.2
 python-dotenv==1.0.1

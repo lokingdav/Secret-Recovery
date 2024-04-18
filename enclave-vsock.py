@@ -4,9 +4,8 @@ import psutil
 
 def system_info():
     print("*******************************************************************")
-    print("vCPU:", psutil.cpu_percent(interval=1))  # CPU utilization over the specified interval
-    print("Mem", psutil.virtual_memory())         # RAM usage statistics
-    print("Partitions", psutil.disk_partitions())        # Disk partition information
+    print("vCPU:", psutil.cpu_percent(interval=1))
+    print(f"Available Memory {round(100 - psutil.virtual_memory().percent, 2)}%")
     print("*******************************************************************")
 
 if __name__ == "__main__":

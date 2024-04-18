@@ -5,7 +5,11 @@ from enclave.response import EnclaveRes
 from skrecovery.helpers import Benchmark
 from experiments.misc import get_client, get_cloud
 
-client_secret_info: str = "Dark matter is a proof of God's existence."
+client_secret_info: str = """
+-----BEGIN PRIVATE KEY-----
+RpgbpqJiHD3pPctZHcE1Ky4f2RR8k0BtmiEUlNV3xV8=
+-----END PRIVATE KEY-----
+""" # Sample key for experiments only
 
 def main(num_runs, test_name = None):
     client: Client = get_client()
