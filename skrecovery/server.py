@@ -123,10 +123,10 @@ class Server(Party):
         return data['ctx']
     
     def process_recover(self, recover_req: dict) -> tuple[EnclaveRes, float]:
-        print("tx_open_id", recover_req['tx_open']['_id'])
-        print("tx_com_id", recover_req['tx_com']['_id'])
+        # print("tx_open_id", recover_req['tx_open']['_id'])
+        # print("tx_com_id", recover_req['tx_com']['_id'])
         tx_open: Transaction = ledger.find_transaction_by_id(recover_req['tx_open']['_id'])
-        print("tx_open", tx_open)
+        # print("tx_open", tx_open)
         chal_window_c: list[Block] = self.get_chal_window_c(recover_req['regtx_id'], tx_open)
         chal_window_c = self.verify_registration_tx(chal_window_c)
         
@@ -135,7 +135,7 @@ class Server(Party):
             raise Exception("Invalid commitment")
         
         chal_window_req: list[Block] = self.get_chal_window_req(tx_open)
-        print('chal_window_req:', len(chal_window_req))
+        # print('chal_window_req:', len(chal_window_req))
         if not self.verify_permission_request(
             tx_open=tx_open,
             chal_window_req=chal_window_req,

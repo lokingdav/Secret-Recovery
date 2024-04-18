@@ -3,10 +3,10 @@ from skrecovery.client import Client
 from skrecovery.server import Server
 from experiments.misc import get_client, get_cloud
 from skrecovery.helpers import Benchmark
+from experiments.store import client_secret_info
 
 def main(num_runs, test_name):
     test_name = "retrieve"
-    secret_info: bytes = "Dark matter is a proof of God's existence."
     client: Client = get_client()
     cloud: Server = get_cloud()
     
@@ -29,7 +29,7 @@ def main(num_runs, test_name):
         plaintext: dict = client.complete_retrieve(ctx)
         client_bm.end()
         
-        assert plaintext == secret_info
+        assert plaintext == client_secret_info
         
         print(f'\nBenchmarks for run {i+1}')
         print('client:', client_bm.entries, client_bm.total())

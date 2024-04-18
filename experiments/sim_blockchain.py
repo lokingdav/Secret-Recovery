@@ -32,9 +32,9 @@ def init():
     else:
         print("Creating seeded blocks")
         for _ in range(config.T_CHAL):
-            print("Creating block", _+1)
+            print("\rCreating block", _+1, end='')
             BLK_SEEDS.append(seed_transactions())
-            
+        print('')
         with open('tmp/seeded_blks.pkl', 'wb') as f:
             pickle.dump(BLK_SEEDS, f)
 
@@ -163,6 +163,7 @@ def simulate(tx_com: dict, tx_open: dict, t_open: int, t_chal: int, t_wait: int,
     
 def clean():
     global START_BLK_ID
+    print('cleaning database after block: ', START_BLK_ID)
     if START_BLK_ID > -1:
         database.delete_blocks_after(START_BLK_ID)
         START_BLK_ID = -1

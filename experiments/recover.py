@@ -83,6 +83,7 @@ def main(num_runs, test_name):
             client_bm.save().reset()
             cloud_bm.save().reset()
             enclave_bm.save().reset()
+            sim_blockchain.clean()
         except Exception as ex:
             sim_blockchain.clean()
             traceback.print_exc()
