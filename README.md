@@ -71,3 +71,6 @@ remember to replace the ```key-name``` and ```security-groups``` with your own v
 - You can also view the read-only console output of the enclave by running the ```nitro-cli console --enclave-id i-05f6ed443aEXAMPLE-enc173dfe3eEXAMPLE``` command. Replace the ```i-05f6ed443aEXAMPLE-enc173dfe3eEXAMPLE``` with your own enclave ID.
 
 - No longer need the enclave? You can terminate it with the ```nitro-cli terminate-enclave --enclave-id i-05f6ed443aEXAMPLE-enc173dfe3eEXAMPLE``` command. Replace the ```i-05f6ed443aEXAMPLE-enc173dfe3eEXAMPLE``` with your own enclave ID.
+
+### Troubleshooting
+- If you are running on AWS ec2 instance, you probably do not have the neccesary environment to run the protocol scripts. Just ensure ```docker-compose``` is installed then navigate to the project root folder and run the script ```run-env.sh```. This script will build the docker image and run the container with the necessary environment to run the protocol scripts. You can then run the protocol scripts in the container.
