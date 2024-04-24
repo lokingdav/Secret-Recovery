@@ -205,8 +205,17 @@ class RecoverReq(TEEReq):
         if not self.perm.client_regtx.signature.verify(self.perm.client_regtx.data):
             raise Exception("Invalid permissions: client_regtx signature")
         
+        # verify registration tx
+        if not self.perm.tx_reg.signature.verify(self.perm.tx_reg.data):
+            raise Exception("Invalid permissions: tx_reg signature")
+        
         # verify window
         self.verify_windows()
+        
+        # Verify client registration
+        authorization = Signer.from_dict(self.perm.tx_reg.data['authorization'])
+        if not authorization.verify(self.perm.client_regtx.data, self.perm_info.vks):
+            raise Exception("Invalid permissions: Server did not authorize registration")
         
         # check if server accepted/denied registration
         # tx_reg: Transaction = Transaction.from_dict(self.perm['tx_reg'])
@@ -217,8 +226,6 @@ class RecoverReq(TEEReq):
         self.check_com_opening()
         
     def verify_windows(self) -> bool:
-        if not blockchain.verify_window(self.perm.chal_window_c):
-            raise Exception("Invalid permissions: chal_window_c")
         if not blockchain.verify_window(self.perm.com_window_req):
             raise Exception("Invalid permissions: com_window_req")
         if not blockchain.verify_window(self.perm.chal_window_req):

@@ -123,19 +123,14 @@ class Server(Party):
         return data['ctx']
     
     def process_recover(self, recover_req: dict) -> tuple[EnclaveRes, float]:
-        # print("tx_open_id", recover_req['tx_open']['_id'])
-        # print("tx_com_id", recover_req['tx_com']['_id'])
         tx_open: Transaction = ledger.find_transaction_by_id(recover_req['tx_open']['_id'])
-        # print("tx_open", tx_open)
-        chal_window_c: list[Block] = self.get_chal_window_c(recover_req['regtx_id'], tx_open)
-        chal_window_c = self.verify_registration_tx(chal_window_c)
         
         com_window_req: list[Block] = self.get_com_window_req(tx_open)
         if not self.verify_commitment_tx(tx_open=tx_open, com_window_req=com_window_req):
             raise Exception("Invalid commitment")
         
         chal_window_req: list[Block] = self.get_chal_window_req(tx_open)
-        # print('chal_window_req:', len(chal_window_req))
+        
         if not self.verify_permission_request(
             tx_open=tx_open,
             chal_window_req=chal_window_req,
@@ -151,7 +146,6 @@ class Server(Party):
         permission.tx_reg = tx_reg
         permission.server_regtx = self.regtx
         permission.client_regtx = client_regtx
-        permission.chal_window_c = chal_window_c
         permission.com_window_req = com_window_req
         permission.chal_window_req = chal_window_req
         permission.tx_open_block_number = tx_open.get_block().get('_id')
@@ -160,10 +154,7 @@ class Server(Party):
         data = {
             'action': 'permission',
             'client_regtx': recover_req['regtx_id'],
-            'chal_window_c': {
-                'start': chal_window_c[0].get_number(),
-                'end': chal_window_c[-1].get_number()
-            },
+            'server_regtx': self.regtx_id,
             'com_window_req': {
                 'start': com_window_req[0].get_number(),
                 'end': com_window_req[-1].get_number()
