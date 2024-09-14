@@ -1,5 +1,5 @@
-# how-to-recover-secret
-Implementation for How to Recover a Cryptographic Secret From the Cloud Paper
+# How to Recover a Cryptographic Secret From the Cloud
+Implementation for How to Recover a Cryptographic Secret From the Cloud Paper. The paper is currently under review but is also public on [Cryptology ePrint Archive](https://eprint.iacr.org/2023/1308).
 
 ## Setup
 - Install Python 3.11 and python3.11-venv
